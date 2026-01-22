@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Pulse",
+    "slug": "pulse",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pulse.app"
+    },
+    "android": {
+      "package": "com.pulse.app"
+    },
+    "web": {
+      "favicon": "./assets/pulselogo.png"
+    }
+  }
+}

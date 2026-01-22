@@ -1,0 +1,3 @@
+# Place your default playlist cover images here
+# Name them: cover1.png, cover2.png, cover3.png, cover4.png, cover5.png
+# Or update the defaultCoverImages array in SetlistCard.tsx to match your file names
