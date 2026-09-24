@@ -5,7 +5,7 @@
 // sets TEST_DATABASE_URL. Skipped when that variable is absent.
 
 import { assert, assertAlmostEquals, assertEquals } from '@std/assert';
-import postgres from 'postgres';
+import postgres from 'npm:postgres@3';
 import { syncUser } from './sync.ts';
 
 const DB_URL = Deno.env.get('TEST_DATABASE_URL');

@@ -2,7 +2,7 @@
 // Run via scripts/test-functions.sh (needs TEST_DATABASE_URL).
 
 import { assertEquals, assertRejects } from '@std/assert';
-import postgres from 'postgres';
+import postgres from 'npm:postgres@3';
 
 const DB_URL = Deno.env.get('TEST_DATABASE_URL');
 const A = '00000000-0000-0000-0000-0000000000c1';

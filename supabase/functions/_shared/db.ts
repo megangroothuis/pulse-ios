@@ -1,4 +1,4 @@
-import postgres from 'postgres';
+import postgres from 'npm:postgres@3';
 
 export type Sql = postgres.Sql;
 

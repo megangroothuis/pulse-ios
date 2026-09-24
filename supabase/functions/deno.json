@@ -1,8 +1,13 @@
 {
-  "compilerOptions": { "strict": true, "lib": ["deno.ns", "dom", "esnext"] },
+  "compilerOptions": {
+    "strict": true,
+    "lib": [
+      "deno.ns",
+      "dom",
+      "esnext"
+    ]
+  },
   "imports": {
-    "@std/assert": "jsr:@std/assert@1",
-    "@supabase/supabase-js": "npm:@supabase/supabase-js@2",
-    "postgres": "npm:postgres@3"
+    "@std/assert": "jsr:@std/assert@1"
   }
 }

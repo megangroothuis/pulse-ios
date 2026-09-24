@@ -2,7 +2,7 @@
 // (App Store guideline 5.1.1(v) requires in-app account deletion). Every table
 // references auth.users with ON DELETE CASCADE, so deleting the auth user
 // removes profiles, connections, tokens, plays, workouts and sessions.
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 import { requireUserId } from '../_shared/auth.ts';
 import { allProviderCreds } from '../_shared/config.ts';
 import { getSql } from '../_shared/db.ts';

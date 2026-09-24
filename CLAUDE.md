@@ -135,6 +135,9 @@ Edge Function secrets (Spotify/Strava client IDs and secrets, `OAUTH_STATE_SECRE
   `SUPABASE_DB_URL`), not supabase-js, because tokens live in the `private`
   schema the Data API doesn't expose. `supabase/` is excluded from the app
   tsconfig; check it with `npm run test:functions` (Deno), not `tsc`.
+- **Edge Function imports use full specifiers** (`npm:postgres@3`,
+  `npm:@supabase/supabase-js@2`). The deploy bundler ignores the import map in
+  `supabase/functions/deno.json`, which only aliases `@std/assert` for tests.
 - **Deno must run from `supabase/functions/`** (or pass `--config deno.json`),
   otherwise it picks up the root tsconfig and fails on `jsx: react-native`.
 - **Web OAuth popups:** the You screen prefetches authorize URLs

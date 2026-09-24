@@ -91,13 +91,19 @@ supabase secrets set \
   CRON_SECRET="$(openssl rand -hex 32)" \
   APP_REDIRECT_URLS="http://localhost:8081"   # web origins allowed to receive OAuth results (comma-separated)
 
-supabase functions deploy oauth-start oauth-callback sync disconnect delete-account
+supabase functions deploy oauth-start oauth-callback sync disconnect delete-account --use-api
 ```
+
+`--use-api` bundles on Supabase's side, so Docker isn't needed.
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_DB_URL`
 are provided to functions automatically. The native app always returns to `pulse://`,
 which is allowed by default. Add your deployed web origin to `APP_REDIRECT_URLS` if you
 ship the web build.
+
+If the project already has tables from an earlier design with the same names
+(`profiles`, `sessions`, `tracks`, `workouts`), move them out of `public` first,
+for example into a `legacy` schema. Otherwise the migration fails.
 
 ## 6. Background sync (pg_cron)
 

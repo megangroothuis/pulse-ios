@@ -73,6 +73,9 @@ create table private.oauth_tokens (
   primary key (user_id, provider)
 );
 
+-- Defence in depth: no policies, so even a mistaken grant exposes nothing.
+alter table private.oauth_tokens enable row level security;
+
 -- Sync cursors (e.g. last Spotify play fetched). Server-only.
 create table private.sync_state (
   user_id uuid not null references auth.users (id) on delete cascade,
@@ -81,6 +84,8 @@ create table private.sync_state (
   updated_at timestamptz not null default now(),
   primary key (user_id, provider)
 );
+
+alter table private.sync_state enable row level security;
 
 -- ----------------------------------------------------------------- tracks
 -- Shared catalogue of Spotify tracks with audio features (not user data).

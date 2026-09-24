@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 import { env, optionalEnv } from './env.ts';
 import { HttpError } from './http.ts';
 
