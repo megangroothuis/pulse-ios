@@ -6,7 +6,13 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "dev:web": "EXPO_OFFLINE=1 EXPO_NO_TELEMETRY=1 expo start --web --port 8081",
+    "typecheck": "tsc -p tsconfig.app.json",
+    "build:web": "EXPO_OFFLINE=1 EXPO_NO_TELEMETRY=1 expo export --platform web --output-dir dist/web",
+    "build:ios-bundle": "EXPO_OFFLINE=1 EXPO_NO_TELEMETRY=1 expo export --platform ios --output-dir dist/ios",
+    "smoke": "NODE_PATH=\"$(npm root -g)\" node scripts/smoke-web.cjs",
+    "verify": "bash scripts/verify.sh"
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.19.17",

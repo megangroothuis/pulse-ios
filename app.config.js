@@ -25,6 +25,7 @@ module.exports = {
       package: "com.pulse.app"
     },
     web: {
+      bundler: "metro",
       favicon: "./assets/pulselogo.png"
     },
     extra: {
