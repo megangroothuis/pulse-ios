@@ -3,6 +3,11 @@ export interface HeatMapDataPoint {
   heartRate: number;
   durationMinutes: number;
   songName: string;
+  // Present on real (synced) sessions; mock data relies on name lookups instead.
+  artist?: string;
+  genre?: string;
+  energy?: number | null;
+  offsetSeconds?: number;
 }
 
 export interface Song {
@@ -20,6 +25,8 @@ export interface GenreData {
   name: string;
   durationMinutes: number;
   badges: GenreBadge[];
+  avgHeartRate?: number;
+  avgBPM?: number;
 }
 
 export interface Session {
@@ -39,6 +46,8 @@ export interface Session {
   genres?: GenreData[];
   bumps: number;
   isLiked: boolean;
+  avgHeartRate?: number;
+  musicMinutes?: number;
 }
 
 export interface Setlist {

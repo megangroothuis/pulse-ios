@@ -4,9 +4,14 @@ Expo SDK 54 / React Native 0.81 / React 19 app (TypeScript) that pairs music and
 workout data. Targets iOS; also runs on web via react-native-web, and **web is
 how you run and check it in a Linux/cloud session** (no iOS simulator there).
 
-All screens that `App.tsx` routes to render **bundled mock data**
-(`src/data/mockData.ts`). No backend, database, or API key is needed to run,
-build, or verify the app.
+The app has two modes, picked at build time by `src/lib/config.ts`:
+
+- **Demo mode** (default, no env vars): every screen renders **bundled mock data**
+  (`src/data/mockData.ts`). No backend or key is needed to run, build, or verify.
+- **Live mode** (`EXPO_PUBLIC_SUPABASE_URL` + `EXPO_PUBLIC_SUPABASE_ANON_KEY` set):
+  Supabase Auth sign-in, Spotify/Strava connections, and the feed shows the user's
+  real sessions from Postgres. Backend lives in `supabase/`. Setup: `BACKEND_SETUP.md`.
+  Explore, Studio, setlists and syncs still use mock data in live mode.
 
 ## Install
 
@@ -32,11 +37,11 @@ npm run dev:web        # Metro + web on http://localhost:8081 (EXPO_OFFLINE=1 ba
 
 ## Test / verify
 
-There is **no unit test suite**. The verification loop is:
+The verification loop is:
 
 ```bash
-npm run verify                  # typecheck + web & iOS bundles + headless smoke (~30s)
-SKIP_BUNDLES=1 npm run verify   # faster: typecheck + smoke only
+npm run verify                  # typecheck + backend tests + bundles + demo & live smoke (~90s)
+SKIP_BUNDLES=1 npm run verify   # faster: skip the bundle exports
 ```
 
 Individual pieces:
@@ -45,13 +50,25 @@ Individual pieces:
 |---|---|
 | `npm run typecheck` | `tsc` over code reachable from `App.tsx` (`tsconfig.app.json`) |
 | `npm run build:web` / `npm run build:ios-bundle` | Metro can bundle the app for that platform (output in `dist/`, gitignored) |
-| `npm run smoke` | Needs the dev server running. Headless Chromium loads Today's Mix → Studio → You and fails on any uncaught page error. Screenshots go to `.smoke/` |
+| `npm run smoke` | Needs the dev server running. Headless Chromium loads Today's Mix → Studio → You (demo mode) and fails on any uncaught page error. Screenshots go to `.smoke/` |
+| `npm run test:functions` | Deno (via `npx deno`): type-checks the Edge Functions and runs `supabase/functions/_shared/*_test.ts`. With `ADMIN_DATABASE_URL` set it also creates a `pulse_test` DB (stub `auth` schema + migrations) and runs the RLS and end-to-end sync tests |
+| `scripts/smoke-live.cjs` | Live mode against `scripts/mock-supabase.cjs` (local Supabase stand-in on :54321, app on :8082): sign-in, OAuth popup, feed, detail, disconnect, sign-out, delete account. `verify` starts both servers |
 
 **Typecheck baseline:** there are **13 pre-existing type errors**, mostly
 `timestamp: string` vs `Date` where objects are serialised for navigation params,
 plus `compact` and `saves` prop mismatches. `verify.sh` fails only if the count goes
 *above* `TYPECHECK_BASELINE`. If you fix some, lower the number there. Never
 raise it.
+
+**Local Postgres for DB tests** (Postgres 16 binaries are in the image; the
+scratchpad isn't readable by the `postgres` user, so use `/var/tmp`):
+
+```bash
+D=/var/tmp/pulse-pg; PG=/usr/lib/postgresql/16/bin
+mkdir -p $D && chown postgres $D
+su postgres -c "$PG/initdb -D $D/data -A trust -U postgres && $PG/pg_ctl -D $D/data -o '-k $D -p 54329 -c listen_addresses=127.0.0.1' -l $D/log start"
+ADMIN_DATABASE_URL=postgres://postgres@127.0.0.1:54329/postgres npm run verify
+```
 
 ## How to confirm a fix actually works
 
@@ -60,45 +77,71 @@ raise it.
    Use `page.screenshot()` and look at the image.
 2. Make the change.
 3. Run `npm run verify`. It must print `VERIFY PASSED`, with no new type errors.
-4. If the change touches a screen the smoke test doesn't cover (detail screens,
-   Explore tab, Studio builders), extend `scripts/smoke-web.cjs` with a step for
-   it rather than checking by hand once.
+4. If the change touches a screen the smoke tests don't cover (Explore tab,
+   Studio builders), extend `scripts/smoke-web.cjs` (demo) or
+   `scripts/smoke-live.cjs` (live) with a step for it rather than checking by
+   hand once. Transform/sync changes need a test in `supabase/functions/_shared/`.
 5. Look at the screenshots in `.smoke/` for visual changes.
 
-Web is a proxy for iOS. Native-only APIs (`expo-secure-store`, OAuth redirects,
-haptics) cannot be checked here, so say so when a fix depends on them.
+Web is a proxy for iOS. Native-only APIs (`expo-secure-store` session storage,
+Sign in with Apple, the `pulse://` OAuth redirect, haptics) cannot be checked
+here, so say so when a fix depends on them. Real Spotify/Strava/ReccoBeats/Supabase
+calls can't be made from the sandbox either (network policy); the mocks stand in.
 
 ## Project structure
 
 ```
-App.tsx                 Navigation stack (Mixdown, Studio, You, *Detail screens)
+App.tsx                 Navigation stack; in live mode wraps it in LiveProvider + sign-in gate
 app.config.js           Real Expo config (loads .env via dotenv; app.json is effectively ignored)
 src/
-  screens/              Mixdown (feed, "Today's Mix"), Studio (AI builders), You (profile/saves),
-                        Session/Setlist/SyncDetail. PhoneAuth, AccountConnection and ApiTest are NOT routed.
+  screens/              Mixdown (feed, "Today's Mix"), Studio (AI builders), You (profile, connections),
+                        Session/Setlist/SyncDetail, SignIn (live mode only)
   components/           Cards (Session/Setlist/Sync), DualAxisChart, GenreBreakdown, AIInsights
-  context/              SavedItemsContext (in-memory saves, used); AuthContext (Clerk, unused)
-  data/mockData.ts      All feed/profile data the app shows
-  lib/                  auth.ts, spotifyAuth.ts, stravaAuth.ts (unused); db.ts & supabase.ts are EMPTY
+  context/              SavedItemsContext (in-memory saves); LiveContext (auth, sessions, connections)
+  data/mockData.ts      Demo-mode feed/profile data
+  lib/                  config.ts (mode switch), supabase.ts (client), api.ts (queries + OAuth connect),
+                        secureStorage.ts (chunked Keychain storage for the auth session)
   types/index.ts        Session / Setlist / Sync / FeedItem types
+supabase/
+  migrations/           Schema + RLS; pg_cron background sync
+  functions/            Deno Edge Functions: oauth-start, oauth-callback, sync, disconnect, delete-account
+    _shared/            transform.ts (HR x songs -> session), sync.ts, providers.ts, tests
+  tests/                Stub of Supabase's auth schema for local DB tests; fixture generator
 ios/                    Prebuilt native iOS project (Xcode/CocoaPods, macOS only)
 scripts/
   cloud-setup.sh        Environment setup (idempotent)
   verify.sh             Full verification (npm run verify)
-  smoke-web.cjs         Headless Playwright smoke test
-supabase_schema*.sql    Planned DB schema (not used by the running app)
-*.md (root)             Setup notes for planned Clerk/Supabase/Spotify/Strava integration
+  smoke-web.cjs         Headless Playwright smoke test (demo mode)
+  smoke-live.cjs        Headless Playwright smoke test (live mode, against mock-supabase.cjs)
+  test-functions.sh     Backend tests (Deno)
+BACKEND_SETUP.md        Supabase / Spotify / Strava / Apple setup, deploy, and what to check with real data
 ```
 
 ## Environment variables
 
-None are needed for the current app. See `.env.example`. `.env` is gitignored.
-`EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`, `EXPO_PUBLIC_SUPABASE_URL/ANON_KEY` and
-`EXPO_PUBLIC_{SPOTIFY,STRAVA}_CLIENT_ID/SECRET` are read only by unrouted code.
-Tooling vars: `EXPO_OFFLINE=1` (required in the cloud sandbox),
+App (`.env`, see `.env.example`): `EXPO_PUBLIC_SUPABASE_URL` and
+`EXPO_PUBLIC_SUPABASE_ANON_KEY` switch on live mode. Nothing else goes in the app.
+Edge Function secrets (Spotify/Strava client IDs and secrets, `OAUTH_STATE_SECRET`,
+`CRON_SECRET`, `APP_REDIRECT_URLS`) are set with `supabase secrets set`; see
+`BACKEND_SETUP.md`. Tooling vars: `EXPO_OFFLINE=1` (required in the cloud sandbox),
 `EXPO_NO_TELEMETRY=1`, `CI=1` (turns off Metro watch mode, so leave it unset while iterating).
 
 ## Gotchas
+
+- **Secrets never go in `EXPO_PUBLIC_*`.** Those are inlined into the shipped
+  bundle. Provider client secrets and tokens stay in Edge Functions / the
+  `private` schema. Don't add client-side token exchange.
+- **Edge Functions talk to Postgres directly** (`postgres` driver +
+  `SUPABASE_DB_URL`), not supabase-js, because tokens live in the `private`
+  schema the Data API doesn't expose. `supabase/` is excluded from the app
+  tsconfig; check it with `npm run test:functions` (Deno), not `tsc`.
+- **Deno must run from `supabase/functions/`** (or pass `--config deno.json`),
+  otherwise it picks up the root tsconfig and fails on `jsx: react-native`.
+- **Web OAuth popups:** the You screen prefetches authorize URLs
+  (`prepareConnect`) so a tap opens the window without awaiting a request.
+  Browsers block popups opened after an await. Keep it that way.
+- **Metro inlines `EXPO_PUBLIC_*` at bundle time.** Live and demo mode need
+  separate dev servers (verify uses :8081 demo, :8082 live).
 
 - **`api.expo.dev` is blocked by the sandbox network policy.** `expo start`
   crashes with `Unexpected token 'H', "Host not i"... is not valid JSON` unless
@@ -110,18 +153,6 @@ Tooling vars: `EXPO_OFFLINE=1` (required in the cloud sandbox),
 - **Hidden screens stay in the DOM on web.** Screens underneath in the native stack are
   still rendered, so in Playwright match with `.filter({ visible: true })`, or
   you will hit invisible duplicates of "You", "Studio" and so on.
-- **Plain `npx tsc --noEmit` fails** on a syntax error in
-  `src/screens/AccountConnectionScreen.tsx`, which has a duplicated component
-  header from a half-finished edit. That file, `PhoneAuthScreen`, `AuthContext`
-  and `src/lib/auth.ts` are unrouted work-in-progress and import names from the
-  **empty** `src/lib/db.ts`. Use `npm run typecheck`, which is scoped to live code.
-- **Importing `AuthContext` throws at module load** if
-  `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` is unset. Wiring it into `App.tsx` makes the
-  app crash in any environment without a Clerk key.
-- `RootStackParamList` lists `ApiTest`, but no screen is registered for it.
-- **Security:** `EXPO_PUBLIC_*_CLIENT_SECRET` values would be inlined into the
-  shipped JS bundle. Real Spotify/Strava secrets must live server-side, not in
-  `EXPO_PUBLIC_` vars.
 - `src/assets/images/meganprofilepic.png` is ~18 MB and slows bundling and web
   load. Avoid adding more assets that large.
 - `start-expo.sh` hardcodes a macOS path (`/Users/megangroothuis/Desktop/PULSE`).

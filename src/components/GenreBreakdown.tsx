@@ -64,7 +64,7 @@ const GenreBreakdown: React.FC<GenreBreakdownProps> = ({ genres, heatMapData, pe
     };
 
     Object.entries(songGroups).forEach(([songName, points]) => {
-      const genreName = songToGenre[songName] || 'Other';
+      const genreName = points[0].genre ?? (songToGenre[songName] || 'Other');
       const durationMinutes = points.reduce((sum, p) => sum + p.durationMinutes, 0);
       
       // Calculate average BPM and heart rate

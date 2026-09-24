@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity, ScrollView, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity, ScrollView, Image, Alert, Platform, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -9,9 +9,56 @@ import { RootStackParamList } from '../../App';
 import { SetlistCard } from '../components/SetlistCard';
 import { SyncCard } from '../components/SyncCard';
 import { IOSStatusBar } from '../components/IOSStatusBar';
-import { Setlist, Sync } from '../types';
+import { ConnectedAccount, Setlist, Sync, User } from '../types';
 import { mockCurrentUser } from '../data/mockData';
 import { useSavedItems } from '../context/SavedItemsContext';
+import { LiveState, useLive } from '../context/LiveContext';
+import { prepareConnect, Provider } from '../lib/api';
+
+// Accounts Pulse can actually connect today; the rest show as coming soon.
+const CONNECTABLE: Record<string, Provider> = { spotify: 'spotify', strava: 'strava' };
+
+function liveUser(live: LiveState): User {
+  const connected = (p: string) => live.connections.some((c) => c.provider === p);
+  const name = live.profile?.displayName || live.profile?.email?.split('@')[0] || 'You';
+  const accounts: ConnectedAccount[] = [
+    { id: 'spotify', name: 'Spotify', type: 'music', icon: 'music-circle', connected: connected('spotify') },
+    { id: 'apple-music', name: 'Apple Music', type: 'music', icon: 'apple', connected: false },
+    { id: 'strava', name: 'Strava', type: 'fitness', icon: 'run', connected: connected('strava') },
+    { id: 'apple-health', name: 'Apple Health', type: 'fitness', icon: 'heart', connected: false },
+  ];
+  return {
+    id: live.profile?.id ?? '',
+    username: live.profile?.email?.split('@')[0] ?? '',
+    fullName: name,
+    followers: 0,
+    following: 0,
+    totalSyncs: 0,
+    sessionsCreated: live.sessions.length,
+    setlistsCreated: 0,
+    sessionsRecorded: live.sessions.length,
+    connectedAccounts: accounts,
+  };
+}
+
+function confirmDeleteAccount(live: LiveState) {
+  const title = 'Delete account?';
+  const message = 'This permanently deletes your Pulse account, sessions and connected accounts. It cannot be undone.';
+  const run = () => live.deleteAccount().catch((e) => notify('Delete account', e?.message ?? String(e)));
+  if (Platform.OS === 'web') {
+    if (window.confirm(`${title}\n\n${message}`)) run();
+    return;
+  }
+  Alert.alert(title, message, [
+    { text: 'Cancel', style: 'cancel' },
+    { text: 'Delete', style: 'destructive', onPress: run },
+  ]);
+}
+
+function notify(title: string, message: string) {
+  if (Platform.OS === 'web') window.alert(`${title}\n\n${message}`);
+  else Alert.alert(title, message);
+}
 
 // Import profile picture - try with explicit path
 const profilePicture = require('../assets/images/meganprofilepic.png') as number;
@@ -23,6 +70,53 @@ export const YouScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'saves' | 'profile'>('profile');
   const { savedSetlists, savedSyncs } = useSavedItems();
+  const live = useLive();
+  const [pendingProvider, setPendingProvider] = useState<string | null>(null);
+
+  // Have authorize URLs ready so a tap can open the OAuth window immediately.
+  useEffect(() => {
+    if (!live || pendingProvider) return;
+    for (const provider of Object.values(CONNECTABLE)) {
+      const conn = live.connections.find((c) => c.provider === provider);
+      if (!conn || conn.lastError === 'reconnect_required') prepareConnect(provider);
+    }
+  }, [live?.connections, pendingProvider]);
+
+  const onAccountPress = async (account: ConnectedAccount) => {
+    if (!live) return;
+    const provider = CONNECTABLE[account.id];
+    if (!provider) {
+      notify(account.name, `${account.name} support is coming soon.`);
+      return;
+    }
+    const liveConn = live.connections.find((c) => c.provider === provider);
+    setPendingProvider(account.id);
+    try {
+      if (liveConn && liveConn.lastError !== 'reconnect_required') {
+        await live.disconnect(provider);
+      } else {
+        const outcome = await live.connect(provider);
+        if (outcome === 'missing_scope') {
+          notify('Strava', 'Pulse needs permission to view your activities. Please connect again and leave that box ticked.');
+        } else if (outcome === 'error') {
+          notify(account.name, `Couldn't connect ${account.name}. Please try again.`);
+        }
+      }
+    } catch (e: any) {
+      notify(account.name, e?.message ?? String(e));
+    } finally {
+      setPendingProvider(null);
+    }
+  };
+
+  const accountStatusLabel = (account: ConnectedAccount) => {
+    if (!live) return account.connected ? 'Connected' : 'Not Connected';
+    const provider = CONNECTABLE[account.id];
+    if (!provider) return 'Coming soon';
+    const conn = live.connections.find((c) => c.provider === provider);
+    if (conn?.lastError === 'reconnect_required') return 'Reconnect';
+    return conn ? 'Disconnect' : 'Connect';
+  };
 
   const renderCompactSetlist = ({ item }: { item: Setlist }) => {
     return <SetlistCard setlist={item} compact={true} />;
@@ -69,7 +163,7 @@ export const YouScreen: React.FC = () => {
   };
 
   const renderProfile = () => {
-    const user = mockCurrentUser;
+    const user = live ? liveUser(live) : mockCurrentUser;
     const musicAccounts = user.connectedAccounts.filter(acc => acc.type === 'music');
     const fitnessAccounts = user.connectedAccounts.filter(acc => acc.type === 'fitness');
 
@@ -83,16 +177,17 @@ export const YouScreen: React.FC = () => {
           {/* Profile Header */}
           <View style={styles.profileHeader}>
             <View style={styles.avatarContainer}>
-              <Image 
-                source={profilePicture} 
-                style={styles.avatarImage}
-                onError={(error) => console.log('Image error:', error)}
-                onLoad={() => console.log('Image loaded successfully')}
-              />
+              {live ? (
+                <View style={[styles.avatarImage, styles.avatarInitial]}>
+                  <Text style={styles.avatarInitialText}>{user.fullName.charAt(0).toUpperCase()}</Text>
+                </View>
+              ) : (
+                <Image source={profilePicture} style={styles.avatarImage} />
+              )}
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.fullName}>{user.fullName}</Text>
-              <Text style={styles.username}>@{user.username}</Text>
+              {!!user.username && <Text style={styles.username}>@{user.username}</Text>}
             </View>
           </View>
 
@@ -147,7 +242,13 @@ export const YouScreen: React.FC = () => {
                 <Text style={styles.accountCategoryTitle}>Music</Text>
               </View>
               {musicAccounts.map((account) => (
-                <View key={account.id} style={styles.accountItem}>
+                <TouchableOpacity
+                  key={account.id}
+                  style={styles.accountItem}
+                  disabled={!live || pendingProvider !== null}
+                  onPress={() => onAccountPress(account)}
+                  activeOpacity={0.7}
+                >
                   <View style={styles.accountInfo}>
                     <MaterialCommunityIcons 
                       name={account.icon as any} 
@@ -159,11 +260,15 @@ export const YouScreen: React.FC = () => {
                     </Text>
                   </View>
                   <View style={[styles.accountStatus, account.connected && styles.accountStatusConnected]}>
-                    <Text style={[styles.accountStatusText, account.connected && styles.accountStatusTextConnected]}>
-                      {account.connected ? 'Connected' : 'Not Connected'}
-                    </Text>
+                    {pendingProvider === account.id ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={[styles.accountStatusText, account.connected && styles.accountStatusTextConnected]}>
+                        {accountStatusLabel(account)}
+                      </Text>
+                    )}
                   </View>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
 
@@ -174,7 +279,13 @@ export const YouScreen: React.FC = () => {
                 <Text style={styles.accountCategoryTitle}>Fitness</Text>
               </View>
               {fitnessAccounts.map((account) => (
-                <View key={account.id} style={styles.accountItem}>
+                <TouchableOpacity
+                  key={account.id}
+                  style={styles.accountItem}
+                  disabled={!live || pendingProvider !== null}
+                  onPress={() => onAccountPress(account)}
+                  activeOpacity={0.7}
+                >
                   <View style={styles.accountInfo}>
                     <MaterialCommunityIcons 
                       name={account.icon as any} 
@@ -186,14 +297,29 @@ export const YouScreen: React.FC = () => {
                     </Text>
                   </View>
                   <View style={[styles.accountStatus, account.connected && styles.accountStatusConnected]}>
-                    <Text style={[styles.accountStatusText, account.connected && styles.accountStatusTextConnected]}>
-                      {account.connected ? 'Connected' : 'Not Connected'}
-                    </Text>
+                    {pendingProvider === account.id ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={[styles.accountStatusText, account.connected && styles.accountStatusTextConnected]}>
+                        {accountStatusLabel(account)}
+                      </Text>
+                    )}
                   </View>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
           </View>
+
+          {live && (
+            <>
+              <TouchableOpacity style={styles.signOutButton} onPress={live.signOut}>
+                <Text style={styles.signOutText}>Sign out</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.deleteAccountButton} onPress={() => confirmDeleteAccount(live)}>
+                <Text style={styles.deleteAccountText}>Delete account</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </ScrollView>
       </View>
     );
@@ -308,6 +434,40 @@ export const YouScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  avatarInitial: {
+    backgroundColor: 'rgba(167, 139, 250, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitialText: {
+    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: '700',
+  },
+  signOutButton: {
+    alignSelf: 'center',
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  deleteAccountButton: {
+    alignSelf: 'center',
+    marginTop: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+  },
+  deleteAccountText: {
+    color: 'rgba(252, 165, 165, 0.9)',
+    fontSize: 14,
+  },
+  signOutText: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 15,
+    fontWeight: '600',
+  },
   container: {
     flex: 1,
   },

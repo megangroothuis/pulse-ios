@@ -131,3 +131,17 @@ Deno.test('coarseGenre buckets Spotify genres', () => {
   assertEquals(coarseGenre(['sea shanty']), 'Sea Shanty');
   assertEquals(coarseGenre([]), 'Other');
 });
+
+Deno.test('power-boost is measured within songs, not across a split genre', () => {
+  // Pop warm-up at 110, rock in the middle at 170, pop again at 170 (flat).
+  // Pop's two songs are 60 bpm apart but neither climbs; rock climbs 120 -> 170.
+  const w = workout(9, (s) => (s < 180 ? 110 : s < 360 ? 120 + ((s - 180) / 180) * 50 : 170));
+  const plays: Play[] = [
+    { playedAt: T0 + 3 * MIN, track: track('p1', { genres: ['pop'] }) },
+    { playedAt: T0 + 6 * MIN, track: track('r', { genres: ['rock'] }) },
+    { playedAt: T0 + 9 * MIN, track: track('p2', { genres: ['pop'] }) },
+  ];
+  const { genres } = summarizeSession(w, plays);
+  const boosted = genres.filter((g) => g.badges.some((b) => b.type === 'power-boost')).map((g) => g.name);
+  assertEquals(boosted, ['Rock']);
+});

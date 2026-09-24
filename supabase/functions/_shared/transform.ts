@@ -292,7 +292,15 @@ export function summarizeSession(workout: WorkoutStreams, plays: Play[]): Sessio
     .slice()
     .sort((a, b) => avgHr(b.acc) - avgHr(a.acc) || (b.track.tempo ?? 0) - (a.track.tempo ?? 0))[0];
 
-  const genres = buildGenres(perGenre);
+  // HR rise is measured within each song, so a genre split across the workout
+  // isn't credited for the climb between two of its songs.
+  const riseByGenre = new Map<string, number>();
+  for (const song of songsInOrder) {
+    const g = coarseGenre(song.track.genres);
+    const rise = mean(song.acc.lastHr) - mean(song.acc.firstHr);
+    riseByGenre.set(g, Math.max(riseByGenre.get(g) ?? -Infinity, rise));
+  }
+  const genres = buildGenres(perGenre, riseByGenre);
 
   return {
     heatMapData,
@@ -309,6 +317,7 @@ export function summarizeSession(workout: WorkoutStreams, plays: Play[]): Sessio
 
 function buildGenres(
   perGenre: Map<string, { acc: Acc; bpmSeconds: number; bpmCount: number }>,
+  riseByGenre: Map<string, number>,
 ): GenreSummary[] {
   const rows = [...perGenre.entries()]
     .filter(([, g]) => g.acc.seconds >= MIN_SONG_SECONDS)
@@ -319,7 +328,7 @@ function buildGenres(
       avgBPM: g.bpmCount ? g.bpmSeconds / g.bpmCount : 0,
       speed: g.acc.velCount ? g.acc.velSeconds / g.acc.velCount : null,
       std: hrStd(g.acc),
-      rise: mean(g.acc.lastHr) - mean(g.acc.firstHr),
+      rise: riseByGenre.get(name) ?? 0,
       badges: [] as { type: BadgeType; label: string }[],
     }))
     .sort((a, b) => b.acc.seconds - a.acc.seconds);

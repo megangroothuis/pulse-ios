@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, TextInput, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, TextInput, Image, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -11,6 +11,7 @@ import { SetlistCard } from '../components/SetlistCard';
 import { SyncCard } from '../components/SyncCard';
 import { FeedItem, Setlist, Session, Sync } from '../types';
 import { mockFeedData } from '../data/mockData';
+import { useLive } from '../context/LiveContext';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -37,6 +38,15 @@ export const MixdownScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'feed' | 'explore'>('feed');
   const [searchQuery, setSearchQuery] = useState('');
+  const live = useLive();
+
+  // Live mode: your real sessions. Demo mode: bundled mock feed.
+  const feedData: FeedItem[] = useMemo(
+    () => (live ? live.sessions.map((s) => ({ type: 'session' as const, data: s })) : mockFeedData),
+    [live?.sessions],
+  );
+  const needsConnection =
+    !!live && !live.loading && !['spotify', 'strava'].every((p) => live.connections.some((c) => c.provider === p));
 
   // Current user ID (in a real app, this would come from auth context)
   const currentUserId = 'user1'; // Assuming current user is Alex
@@ -635,12 +645,42 @@ export const MixdownScreen: React.FC = () => {
           {/* Section Content */}
           {activeTab === 'feed' ? (
             <FlatList
-              data={mockFeedData}
+              data={feedData}
               renderItem={renderFeedItem}
               keyExtractor={(item) => `${item.type}-${item.data.id}`}
               contentContainerStyle={[styles.listContent, { paddingBottom: 52 + Math.max(20, insets.bottom) }]}
               showsVerticalScrollIndicator={false}
               ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+              refreshControl={
+                live ? (
+                  <RefreshControl refreshing={live.syncing} onRefresh={live.sync} tintColor="#FFFFFF" />
+                ) : undefined
+              }
+              ListEmptyComponent={
+                live && !live.loading ? (
+                  <View style={styles.liveEmpty}>
+                    <MaterialCommunityIcons name="heart-pulse" size={56} color="rgba(255, 255, 255, 0.4)" />
+                    <Text style={styles.liveEmptyTitle}>
+                      {needsConnection ? 'Connect Spotify and Strava' : 'No sessions yet'}
+                    </Text>
+                    <Text style={styles.liveEmptyText}>
+                      {needsConnection
+                        ? 'Pulse matches your heart rate from Strava with what you played on Spotify.'
+                        : 'Record a workout with heart rate on Strava while listening on Spotify, then pull down to sync.'}
+                    </Text>
+                    {needsConnection ? (
+                      <TouchableOpacity style={styles.liveEmptyButton} onPress={() => navigation.navigate('You')}>
+                        <Text style={styles.liveEmptyButtonText}>Connect accounts</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity style={styles.liveEmptyButton} onPress={live.sync} disabled={live.syncing}>
+                        <Text style={styles.liveEmptyButtonText}>{live.syncing ? 'Syncing…' : 'Sync now'}</Text>
+                      </TouchableOpacity>
+                    )}
+                    {live.error && <Text style={styles.liveEmptyError}>{live.error}</Text>}
+                  </View>
+                ) : null
+              }
             />
           ) : (
             renderExplore()
@@ -671,6 +711,42 @@ export const MixdownScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  liveEmpty: {
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingTop: 80,
+  },
+  liveEmptyTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  liveEmptyText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 15,
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
+  liveEmptyButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    marginTop: 20,
+  },
+  liveEmptyButtonText: {
+    color: '#4C1D95',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  liveEmptyError: {
+    color: '#FCA5A5',
+    marginTop: 12,
+    textAlign: 'center',
+  },
   container: {
     flex: 1,
   },

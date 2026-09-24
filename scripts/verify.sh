@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# One-shot verification: typecheck (against a known baseline), build the web
-# and iOS JS bundles, then run the headless web smoke test.
+# One-shot verification: typecheck (against a known baseline), backend tests,
+# build the web and iOS JS bundles, then run the headless web smoke tests in
+# demo mode (mock data) and live mode (against scripts/mock-supabase.cjs).
 #
-#   npm run verify            # full run
+#   npm run verify                  # full run
 #   SKIP_BUNDLES=1 npm run verify   # skip the (slower) export step
+#   ADMIN_DATABASE_URL=postgres://... npm run verify   # also run DB-backed backend tests
 #
 # Reuses a dev server already listening on :8081; otherwise starts one and
-# stops it afterwards.
+# stops it afterwards. Live mode always uses its own server on :8082.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
@@ -29,6 +31,13 @@ elif (( tc_count < TYPECHECK_BASELINE )); then
   echo "OK: $tc_count type errors — below baseline, lower TYPECHECK_BASELINE in scripts/verify.sh"
 else
   echo "OK: $tc_count type errors (unchanged)"
+fi
+
+echo "== backend tests (Deno) =="
+if bash scripts/test-functions.sh >/tmp/pulse-functions.log 2>&1; then
+  grep -E "passed|skipping" /tmp/pulse-functions.log | sed 's/\x1b\[[0-9;]*m//g'
+else
+  tail -60 /tmp/pulse-functions.log; echo "FAIL: backend tests"; fail=1
 fi
 
 if [[ -z "${SKIP_BUNDLES:-}" ]]; then
@@ -65,6 +74,24 @@ fi
 if [[ -n "$started_pid" ]]; then
   kill -- -"$started_pid" 2>/dev/null || kill "$started_pid" 2>/dev/null || true
 fi
+
+echo "== smoke (live mode vs mock Supabase, headless Chromium) =="
+LIVE_PORT=8082
+MOCK_PORT=54321
+node scripts/mock-supabase.cjs "$MOCK_PORT" >/tmp/pulse-mock-supabase.log 2>&1 &
+mock_pid=$!
+EXPO_PUBLIC_SUPABASE_URL="http://localhost:$MOCK_PORT" EXPO_PUBLIC_SUPABASE_ANON_KEY=mock-anon-key \
+  CI=1 setsid npx expo start --web --port "$LIVE_PORT" >/tmp/pulse-expo-live.log 2>&1 &
+live_pid=$!
+for _ in $(seq 1 90); do
+  curl -sf "http://localhost:$LIVE_PORT" >/dev/null && break
+  sleep 2
+done
+if ! NODE_PATH="$(npm root -g)" node scripts/smoke-live.cjs "http://localhost:$LIVE_PORT"; then
+  fail=1
+fi
+kill -- -"$live_pid" 2>/dev/null || kill "$live_pid" 2>/dev/null || true
+kill "$mock_pid" 2>/dev/null || true
 
 echo
 if (( fail )); then echo "VERIFY FAILED"; exit 1; fi

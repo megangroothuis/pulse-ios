@@ -1,11 +1,24 @@
-# Supabase CLI config. `supabase link` + `supabase db push` + `supabase functions deploy`.
+# Supabase CLI config: `supabase link`, `supabase db push`, `supabase functions deploy`.
 project_id = "pulse"
 
-# The OAuth callback is hit by the user's browser coming back from Spotify or
-# Strava, so it has no Supabase JWT. It authenticates via the signed `state`.
+# Gateway JWT checks are off for every function: each one authenticates the
+# caller itself (requireUserId, the signed OAuth state, or x-cron-secret).
+# This also keeps them working with Supabase's newer publishable/secret keys.
+
+# Hit by the user's browser coming back from Spotify/Strava (no Supabase JWT);
+# trusts only the signed `state`.
 [functions.oauth-callback]
 verify_jwt = false
 
-# Called by pg_cron with x-cron-secret, or by the app with a user token (checked in code).
+# Called by pg_cron with x-cron-secret, or by the app with a user token.
 [functions.sync]
+verify_jwt = false
+
+[functions.oauth-start]
+verify_jwt = false
+
+[functions.disconnect]
+verify_jwt = false
+
+[functions.delete-account]
 verify_jwt = false
