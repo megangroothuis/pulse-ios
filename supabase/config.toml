@@ -1,0 +1,11 @@
+# Supabase CLI config. `supabase link` + `supabase db push` + `supabase functions deploy`.
+project_id = "pulse"
+
+# The OAuth callback is hit by the user's browser coming back from Spotify or
+# Strava, so it has no Supabase JWT. It authenticates via the signed `state`.
+[functions.oauth-callback]
+verify_jwt = false
+
+# Called by pg_cron with x-cron-secret, or by the app with a user token (checked in code).
+[functions.sync]
+verify_jwt = false
