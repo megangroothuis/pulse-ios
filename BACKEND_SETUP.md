@@ -130,10 +130,44 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon / publishable key>
 Restart Metro. With those two set, the app shows the sign-in screen, and the feed shows
 your real sessions. Without them it runs in demo mode on mock data.
 
-**iOS native build:** `expo-apple-authentication` is a new native module, so rebuild once:
-`npx expo prebuild -p ios && cd ios && pod install && cd .. && npm run ios`.
+**iOS native build on your Mac:** `cd ios && pod install && cd .. && npx expo run:ios --device`
+(the `ios/` folder is regenerated from `app.config.js`; after changing the config, run
+`npx expo prebuild -p ios --clean` first).
 OAuth returns to the `pulse://` scheme, which works in a development build but not in
 Expo Go.
+
+## 7b. Install on your iPhone (TestFlight, no cable or Xcode needed)
+
+The project is set up for Expo's cloud build service (EAS). `eas.json` already
+contains the Supabase URL and publishable key for the build. The iOS bundle ID is
+`com.megangroothuis.pulse`: `com.pulse.app` belongs to someone else on the App
+Store. From any Mac or PC terminal in the repo:
+
+```bash
+npm install -g eas-cli
+eas login                     # free Expo account (create one at expo.dev if needed)
+eas init                      # creates the Expo project; with app.config.js it prints an
+                              # `extra.eas.projectId` (and `owner`). Add them to app.config.js
+eas build -p ios --profile production
+```
+
+`eas build` asks for your Apple Developer login once. It then registers the bundle ID
+(with Sign in with Apple), and creates the signing certificate and provisioning profile.
+The build takes about 15–20 minutes on Expo's servers. Then:
+
+```bash
+eas submit -p ios --latest    # uploads the build to App Store Connect
+```
+
+- If `eas submit` can't create the app because the **name "Pulse" is taken** on the
+  App Store, create the app yourself in [App Store Connect](https://appstoreconnect.apple.com)
+  → Apps → + with a unique name (e.g. "Pulse: Music x Movement") and bundle ID
+  `com.megangroothuis.pulse`, then run `eas submit` again. The name under the icon on
+  your phone stays "Pulse".
+- In App Store Connect → your app → **TestFlight**, add yourself under *Internal Testing*
+  (no Apple review needed). Install the **TestFlight** app on your iPhone and accept the invite.
+- Each later `eas build` + `eas submit` shows up in TestFlight automatically (build numbers
+  auto-increment).
 
 ## 8. Try it
 

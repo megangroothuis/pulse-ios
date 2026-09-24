@@ -59,7 +59,10 @@ echo "== smoke (web, headless Chromium) =="
 started_pid=""
 if ! curl -sf "http://localhost:$PORT" >/dev/null; then
   echo "starting dev server on :$PORT (log: /tmp/pulse-expo.log)"
-  CI=1 setsid npx expo start --web --port "$PORT" >/tmp/pulse-expo.log 2>&1 &
+  # Always demo mode, ignoring any .env. In dev mode Expo re-reads .env files
+  # in the browser and they beat shell values, so run production-mode
+  # (--no-dev: values inlined from this environment) and --clear the cache.
+  EXPO_NO_DOTENV=1 EXPO_PUBLIC_DEMO_MODE=1 CI=1 setsid npx expo start --web --port "$PORT" --clear --no-dev >/tmp/pulse-expo.log 2>&1 &
   started_pid=$!
   for _ in $(seq 1 90); do
     curl -sf "http://localhost:$PORT" >/dev/null && break
@@ -81,7 +84,7 @@ MOCK_PORT=54321
 node scripts/mock-supabase.cjs "$MOCK_PORT" >/tmp/pulse-mock-supabase.log 2>&1 &
 mock_pid=$!
 EXPO_PUBLIC_SUPABASE_URL="http://localhost:$MOCK_PORT" EXPO_PUBLIC_SUPABASE_ANON_KEY=mock-anon-key \
-  CI=1 setsid npx expo start --web --port "$LIVE_PORT" >/tmp/pulse-expo-live.log 2>&1 &
+  EXPO_NO_DOTENV=1 EXPO_PUBLIC_DEMO_MODE=0 CI=1 setsid npx expo start --web --port "$LIVE_PORT" --clear --no-dev >/tmp/pulse-expo-live.log 2>&1 &
 live_pid=$!
 for _ in $(seq 1 90); do
   curl -sf "http://localhost:$LIVE_PORT" >/dev/null && break
