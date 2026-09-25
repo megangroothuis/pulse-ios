@@ -6,7 +6,9 @@
 import type { Sql } from './db.ts';
 import {
   AudioFeatures,
+  deezerBpm,
   Fetch,
+  musicBrainzArtistGenres,
   Provider,
   ProviderCredentials,
   ProviderError,
@@ -27,6 +29,7 @@ export interface SyncDeps {
   fetch: Fetch;
   creds: { spotify?: ProviderCredentials; strava?: ProviderCredentials };
   now?: () => number;
+  sleep?: (ms: number) => Promise<void>;
 }
 
 export interface SyncResult {
@@ -42,6 +45,9 @@ const INITIAL_WORKOUT_LOOKBACK_DAYS = 14;
 const RECOMPUTE_WINDOW_HOURS = 48;
 // Stay well under Strava's 100 requests / 15 min app-wide limit.
 const MAX_STREAM_FETCHES_PER_RUN = 15;
+// Fallback lookups per run (MusicBrainz allows ~1 request/second).
+const MAX_FALLBACK_TRACKS_PER_RUN = 25;
+const MAX_MUSICBRAINZ_ARTISTS_PER_RUN = 15;
 // A session needs at least this much music overlapping the workout.
 const MIN_MUSIC_MINUTES = 1;
 // Plays can start slightly before the workout does.
@@ -109,12 +115,13 @@ export async function syncSpotify(deps: SyncDeps, userId: string): Promise<numbe
       album: t.album?.name ?? null,
       image_url: t.album?.images?.[0]?.url ?? null,
       duration_ms: t.duration_ms,
+      isrc: t.external_ids?.isrc ?? null,
     }));
     for (const r of trackRows) {
       await sql`
-        insert into public.tracks (spotify_id, name, artists, artist_ids, album, image_url, duration_ms)
-        values (${r.spotify_id}, ${r.name}, ${r.artists}, ${r.artist_ids}, ${r.album}, ${r.image_url}, ${r.duration_ms})
-        on conflict (spotify_id) do nothing`;
+        insert into public.tracks (spotify_id, name, artists, artist_ids, album, image_url, duration_ms, isrc)
+        values (${r.spotify_id}, ${r.name}, ${r.artists}, ${r.artist_ids}, ${r.album}, ${r.image_url}, ${r.duration_ms}, ${r.isrc})
+        on conflict (spotify_id) do update set isrc = coalesce(public.tracks.isrc, excluded.isrc)`;
     }
     for (const p of plays) {
       const res = await sql`
@@ -127,6 +134,7 @@ export async function syncSpotify(deps: SyncDeps, userId: string): Promise<numbe
   }
 
   await enrichTracks(deps, userId, token);
+  await fallbackEnrichTracks(deps, userId);
   return inserted;
 }
 
@@ -164,7 +172,59 @@ async function enrichTracks(deps: SyncDeps, userId: string, token: string) {
       update public.tracks set
         tempo = ${af?.tempo ?? null}, energy = ${af?.energy ?? null},
         danceability = ${af?.danceability ?? null}, valence = ${af?.valence ?? null},
-        genres = ${g}, features_checked_at = now()
+        isrc = coalesce(isrc, ${af?.isrc ?? null}),
+        bpm_source = ${af?.tempo ? 'reccobeats' : null},
+        genres = ${g}, genres_source = ${g.length ? 'spotify' : null},
+        features_checked_at = now()
+      where spotify_id = ${t.spotify_id}`;
+  }
+}
+
+/**
+ * Second chance for tracks the primary sources left incomplete: BPM from
+ * Deezer, genres from MusicBrainz (by primary artist). Each track is tried
+ * once; network failures leave it unmarked so the next run retries.
+ */
+async function fallbackEnrichTracks(deps: SyncDeps, userId: string) {
+  const { sql, fetch: f } = deps;
+  const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const pending = await sql<{ spotify_id: string; name: string; artists: string[]; isrc: string | null; tempo: number | null; genres: string[] }[]>`
+    select distinct t.spotify_id, t.name, t.artists, t.isrc, t.tempo, t.genres from public.tracks t
+    join public.plays p on p.track_id = t.spotify_id and p.user_id = ${userId}
+    where t.features_checked_at is not null and t.fallback_checked_at is null
+      and (t.tempo is null or cardinality(t.genres) = 0)
+    limit ${MAX_FALLBACK_TRACKS_PER_RUN}`;
+
+  const artistGenres = new Map<string, string[]>();
+  let mbLookups = 0;
+  for (const t of pending) {
+    const artist = t.artists[0] ?? '';
+    let tempo = t.tempo;
+    let genres = t.genres;
+    try {
+      if (tempo == null && artist) {
+        tempo = await deezerBpm(f, { isrc: t.isrc, title: t.name, artist });
+      }
+      if (genres.length === 0 && artist) {
+        if (!artistGenres.has(artist)) {
+          if (mbLookups >= MAX_MUSICBRAINZ_ARTISTS_PER_RUN) continue; // rest next run
+          if (mbLookups > 0) await sleep(1100);
+          mbLookups++;
+          artistGenres.set(artist, await musicBrainzArtistGenres(f, artist, sleep));
+        }
+        genres = artistGenres.get(artist) ?? [];
+      }
+    } catch (err) {
+      console.error(`Fallback enrichment failed for ${t.spotify_id}`, err);
+      continue;
+    }
+    await sql`
+      update public.tracks set
+        tempo = ${tempo},
+        bpm_source = case when ${tempo}::real is not null and tempo is null then 'deezer' else bpm_source end,
+        genres = ${genres},
+        genres_source = case when cardinality(${genres}::text[]) > 0 and cardinality(genres) = 0 then 'musicbrainz' else genres_source end,
+        fallback_checked_at = now()
       where spotify_id = ${t.spotify_id}`;
   }
 }

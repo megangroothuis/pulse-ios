@@ -25,6 +25,12 @@ What the sync does, per user:
 2. **BPM and energy.** Looked up from [ReccoBeats](https://reccobeats.com) by
    Spotify track ID. Spotify stopped giving audio features to new apps in
    November 2024. Genres come from Spotify artist data when available.
+   Tracks still missing data get one fallback pass: BPM from Deezer (by ISRC,
+   else a plain title and artist search, because Deezer's `artist:"…"` search
+   syntax returns nothing from US regions), and genres from MusicBrainz artist
+   data. On the first real library, the MusicBrainz pass raised genre coverage
+   from 25% to 56%. Deezer found every missing track but had no tempo for any
+   of them.
 3. **Strava.** Saves new activities. For those with heart rate, it fetches the
    per-second `time` / `heartrate` / `velocity_smooth` streams.
 4. **Sessions.** For every workout with heart rate, each HR sample is matched to

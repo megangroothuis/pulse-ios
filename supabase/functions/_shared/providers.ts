@@ -98,6 +98,7 @@ export interface SpotifyTrack {
   duration_ms: number;
   artists: { id: string; name: string }[];
   album?: { name: string; images?: { url: string; width?: number }[] };
+  external_ids?: { isrc?: string };
 }
 
 export interface SpotifyPlay {
@@ -278,6 +279,7 @@ export function workoutTypeLabel(a: StravaActivity): string {
 // --------------------------------------------------------------- ReccoBeats
 
 export interface AudioFeatures {
+  isrc: string | null;
   tempo: number | null;
   energy: number | null;
   danceability: number | null;
@@ -297,12 +299,20 @@ export async function reccoBeatsFeatures(f: Fetch, spotifyIds: string[]): Promis
       headers: { Accept: 'application/json' },
     });
     const data = await readJson<{
-      content?: { href?: string; tempo?: number; energy?: number; danceability?: number; valence?: number }[];
+      content?: {
+        href?: string;
+        isrc?: string;
+        tempo?: number;
+        energy?: number;
+        danceability?: number;
+        valence?: number;
+      }[];
     }>('reccobeats', res);
     for (const item of data.content ?? []) {
       const id = item.href?.match(/track\/([A-Za-z0-9]+)/)?.[1];
       if (!id || !batch.includes(id)) continue;
       out.set(id, {
+        isrc: item.isrc ?? null,
         tempo: item.tempo ?? null,
         energy: item.energy ?? null,
         danceability: item.danceability ?? null,
@@ -311,4 +321,92 @@ export async function reccoBeatsFeatures(f: Fetch, spotifyIds: string[]): Promis
     }
   }
   return out;
+}
+
+// ------------------------------------------------------ Fallback enrichment
+
+/** Lowercase, drop "(feat. …)", " - Remastered 2011" etc. and punctuation for fuzzy matching. */
+export function normalizeTitle(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/\s*[([].*?[)\]]/g, '')
+    .replace(/\s+-\s+.*$/, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+}
+
+interface DeezerTrack {
+  id?: number;
+  title?: string;
+  bpm?: number;
+  artist?: { name?: string };
+  error?: unknown;
+}
+
+/**
+ * BPM from Deezer's public API (no key). Looks up by ISRC first, then falls
+ * back to a title + artist search. Deezer reports 0 when it has no tempo,
+ * which is treated as unknown.
+ */
+export async function deezerBpm(
+  f: Fetch,
+  track: { isrc: string | null; title: string; artist: string },
+): Promise<number | null> {
+  const get = async <T>(url: string) => readJson<T>('deezer', await f(url, { headers: { Accept: 'application/json' } }));
+  const bpmOf = (t: DeezerTrack | undefined) => (t && !t.error && typeof t.bpm === 'number' && t.bpm > 0 ? t.bpm : null);
+
+  if (track.isrc) {
+    const byIsrc = bpmOf(await get<DeezerTrack>(`https://api.deezer.com/track/isrc:${encodeURIComponent(track.isrc)}`));
+    if (byIsrc) return byIsrc;
+  }
+
+  // Plain keyword search: Deezer's `artist:"…" track:"…"` syntax returns no
+  // results from US regions, but plain queries do. Matching below keeps it exact.
+  const q = `${track.artist} ${normalizeTitle(track.title)}`;
+  const found = await get<{ data?: DeezerTrack[] }>(
+    `https://api.deezer.com/search/track?q=${encodeURIComponent(q)}&limit=5`,
+  );
+  const wantTitle = normalizeTitle(track.title);
+  const wantArtist = normalizeTitle(track.artist);
+  const match = (found.data ?? []).find(
+    (t) => t.id && normalizeTitle(t.title ?? '') === wantTitle && normalizeTitle(t.artist?.name ?? '') === wantArtist,
+  );
+  if (!match) return null;
+  // Search results omit bpm; fetch the full track.
+  return bpmOf(await get<DeezerTrack>(`https://api.deezer.com/track/${match.id}`));
+}
+
+// MusicBrainz asks every client to identify itself.
+const MUSICBRAINZ_UA = 'Pulse/1.0 ( https://github.com/megangroothuis/pulse-ios )';
+
+/**
+ * Artist genres from MusicBrainz (no key; max ~1 request/second, so callers
+ * pace calls with `sleep`). Only accepts an exact-name, high-confidence match.
+ * Returns up to 5 genres, most-voted first.
+ */
+export async function musicBrainzArtistGenres(
+  f: Fetch,
+  artistName: string,
+  sleep: (ms: number) => Promise<void>,
+): Promise<string[]> {
+  const get = async <T>(url: string) =>
+    readJson<T>('musicbrainz', await f(url, { headers: { Accept: 'application/json', 'User-Agent': MUSICBRAINZ_UA } }));
+
+  const query = encodeURIComponent(`artist:"${artistName.replace(/"/g, '')}"`);
+  const search = await get<{ artists?: { id: string; name: string; score?: number }[] }>(
+    `https://musicbrainz.org/ws/2/artist/?query=${query}&limit=3&fmt=json`,
+  );
+  const want = normalizeTitle(artistName);
+  const artist = (search.artists ?? []).find((a) => (a.score ?? 0) >= 90 && normalizeTitle(a.name) === want);
+  if (!artist) return [];
+
+  await sleep(1100);
+  const detail = await get<{ genres?: { name: string; count?: number }[] }>(
+    `https://musicbrainz.org/ws/2/artist/${artist.id}?inc=genres&fmt=json`,
+  );
+  return (detail.genres ?? [])
+    .slice()
+    .sort((a, b) => (b.count ?? 0) - (a.count ?? 0))
+    .slice(0, 5)
+    .map((g) => g.name);
 }

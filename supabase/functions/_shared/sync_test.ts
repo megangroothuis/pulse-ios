@@ -32,6 +32,7 @@ const trackEarlier = {
   name: 'Breakfast Song',
   duration_ms: 3 * MIN,
   artists: [{ id: 'artistA', name: 'Pop Artist' }],
+  external_ids: { isrc: 'USFAKE0000003' },
 };
 
 function fakeNetwork() {
@@ -71,6 +72,10 @@ function fakeNetwork() {
           valence: 0.5,
         })),
       });
+    }
+    // ReccoBeats doesn't know trackEarlier; Deezer has it by ISRC.
+    if (url.host === 'api.deezer.com' && url.pathname === '/track/isrc:USFAKE0000003') {
+      return ok({ id: 3, title: 'Breakfast Song', bpm: 98 });
     }
     if (url.pathname === '/api/v3/athlete/activities') {
       if (url.searchParams.get('page') !== '1') return ok([]);
@@ -129,7 +134,7 @@ Deno.test({
 
       const net = fakeNetwork();
       const creds = { clientId: 'id', clientSecret: 'secret' };
-      const deps = { sql, fetch: net.f, creds: { spotify: creds, strava: creds }, now: () => NOW };
+      const deps = { sql, fetch: net.f, creds: { spotify: creds, strava: creds }, now: () => NOW, sleep: () => Promise.resolve() };
 
       const r1 = await syncUser(deps, USER);
       assertEquals(r1.errors, []);
@@ -142,9 +147,13 @@ Deno.test({
       assertEquals(tok.access_token, 'spotify-fresh');
       assertEquals(net.calls.filter((c) => c.includes('/streams')).length, 1);
 
-      const [track] = await sql`select tempo, genres from public.tracks where spotify_id = ${trackB.id}`;
+      const [track] = await sql`select tempo, genres, bpm_source, genres_source from public.tracks where spotify_id = ${trackB.id}`;
       assertEquals(track.tempo, 170);
       assertEquals(track.genres, ['trap']);
+      assertEquals([track.bpm_source, track.genres_source], ['reccobeats', 'spotify']);
+      const [early] = await sql`select tempo, isrc, bpm_source, fallback_checked_at from public.tracks where spotify_id = ${trackEarlier.id}`;
+      assertEquals([early.tempo, early.isrc, early.bpm_source], [98, 'USFAKE0000003', 'deezer']);
+      assert(early.fallback_checked_at);
 
       const sessions = await sql`select * from public.sessions where user_id = ${USER}`;
       assertEquals(sessions.length, 1);
