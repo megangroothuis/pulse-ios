@@ -35,6 +35,14 @@ const trackEarlier = {
   external_ids: { isrc: 'USFAKE0000003' },
 };
 
+// Played before the workout, unknown to ReccoBeats and Deezer: goes to audio analysis.
+const trackUnknown = {
+  id: 'trackD0000000000000004',
+  name: 'Obscure Demo',
+  duration_ms: 3 * MIN,
+  artists: [{ id: 'artistA', name: 'Pop Artist' }],
+};
+
 function fakeNetwork() {
   const calls: string[] = [];
   const f = (async (input: string | URL | Request, init?: RequestInit) => {
@@ -54,6 +62,7 @@ function fakeNetwork() {
           { played_at: new Date(T0 + 12 * MIN).toISOString(), track: trackB },
           { played_at: new Date(T0 + 6 * MIN).toISOString(), track: trackA },
           { played_at: new Date(T0 - 60 * MIN).toISOString(), track: trackEarlier },
+          { played_at: new Date(T0 - 90 * MIN).toISOString(), track: trackUnknown },
         ],
       });
     }
@@ -77,6 +86,7 @@ function fakeNetwork() {
     if (url.host === 'api.deezer.com' && url.pathname === '/track/isrc:USFAKE0000003') {
       return ok({ id: 3, title: 'Breakfast Song', bpm: 98 });
     }
+    if (url.host === 'api.deezer.com' && url.pathname === '/search/track') return ok({ data: [] });
     if (url.pathname === '/api/v3/athlete/activities') {
       if (url.searchParams.get('page') !== '1') return ok([]);
       return ok([
@@ -134,11 +144,18 @@ Deno.test({
 
       const net = fakeNetwork();
       const creds = { clientId: 'id', clientSecret: 'secret' };
-      const deps = { sql, fetch: net.f, creds: { spotify: creds, strava: creds }, now: () => NOW, sleep: () => Promise.resolve() };
+      const analyzed: string[] = [];
+      const analyzeTempo = async (id: string) => {
+        analyzed.push(id);
+        await sql`update public.tracks set tempo = 77, bpm_source = 'estimated', tempo_analyzed_at = now() where spotify_id = ${id}`;
+      };
+      const deps = { sql, fetch: net.f, creds: { spotify: creds, strava: creds }, now: () => NOW, sleep: () => Promise.resolve(), analyzeTempo };
 
       const r1 = await syncUser(deps, USER);
       assertEquals(r1.errors, []);
-      assertEquals(r1.newPlays, 3);
+      assertEquals(r1.newPlays, 4);
+      // Only the track no catalog knows is sent for audio analysis.
+      assertEquals(analyzed, [trackUnknown.id]);
       assertEquals(r1.newWorkouts, 2);
       assertEquals(r1.sessionsComputed, 1);
 
@@ -185,7 +202,8 @@ Deno.test({
       assertEquals(r2.newWorkouts, 0);
       const again = await sql`select title from public.sessions where user_id = ${USER}`;
       assertEquals(again.map((r) => r.title), ['Park loop']);
-      assertEquals((await sql`select count(*)::int as n from public.plays`)[0].n, 3);
+      assertEquals((await sql`select count(*)::int as n from public.plays`)[0].n, 4);
+      assertEquals(analyzed.length, 1); // not re-analysed on the second run
     } finally {
       await sql.end();
     }

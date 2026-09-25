@@ -17,3 +17,20 @@ export const oauthCallbackUrl = () => `${env('SUPABASE_URL')}/functions/v1/oauth
 /** Where the callback may send the user back to (see isAllowedReturnTo). */
 export const returnToAllowList = () =>
   ['pulse', ...(optionalEnv('APP_REDIRECT_URLS') ?? '').split(',').map((s) => s.trim())].filter(Boolean);
+
+/**
+ * Calls the analyze-tempo function for one track. Each call gets its own CPU
+ * budget, which audio decoding needs. Undefined when CRON_SECRET isn't set.
+ */
+export function tempoAnalyzer(): ((trackId: string) => Promise<void>) | undefined {
+  const secret = optionalEnv('CRON_SECRET');
+  if (!secret) return undefined;
+  return async (trackId: string) => {
+    const res = await fetch(`${env('SUPABASE_URL')}/functions/v1/analyze-tempo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-cron-secret': secret },
+      body: JSON.stringify({ trackId }),
+    });
+    if (!res.ok) throw new Error(`analyze-tempo ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  };
+}

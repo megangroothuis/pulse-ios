@@ -104,8 +104,9 @@ src/
   types/index.ts        Session / Setlist / Sync / FeedItem types
 supabase/
   migrations/           Schema + RLS; pg_cron background sync
-  functions/            Deno Edge Functions: oauth-start, oauth-callback, sync, disconnect, delete-account
-    _shared/            transform.ts (HR x songs -> session), sync.ts, providers.ts, tests
+  functions/            Deno Edge Functions: oauth-start, oauth-callback, sync, disconnect, delete-account,
+                        analyze-tempo (BPM measured from 30 s previews)
+    _shared/            transform.ts (HR x songs -> session), sync.ts, providers.ts, tempo.ts, tests
   tests/                Stub of Supabase's auth schema for local DB tests; fixture generator
 ios/                    Prebuilt native iOS project (Xcode/CocoaPods, macOS only)
 scripts/

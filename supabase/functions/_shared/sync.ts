@@ -30,6 +30,8 @@ export interface SyncDeps {
   creds: { spotify?: ProviderCredentials; strava?: ProviderCredentials };
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
+  /** Measure one track's tempo from audio (the analyze-tempo function). Optional. */
+  analyzeTempo?: (trackId: string) => Promise<void>;
 }
 
 export interface SyncResult {
@@ -48,6 +50,8 @@ const MAX_STREAM_FETCHES_PER_RUN = 15;
 // Fallback lookups per run (MusicBrainz allows ~1 request/second).
 const MAX_FALLBACK_TRACKS_PER_RUN = 25;
 const MAX_MUSICBRAINZ_ARTISTS_PER_RUN = 15;
+// Audio tempo analyses per run (each is its own function call).
+const MAX_TEMPO_ANALYSES_PER_RUN = 8;
 // A session needs at least this much music overlapping the workout.
 const MIN_MUSIC_MINUTES = 1;
 // Plays can start slightly before the workout does.
@@ -135,6 +139,7 @@ export async function syncSpotify(deps: SyncDeps, userId: string): Promise<numbe
 
   await enrichTracks(deps, userId, token);
   await fallbackEnrichTracks(deps, userId);
+  await analyzeMissingTempos(deps, userId);
   return inserted;
 }
 
@@ -226,6 +231,23 @@ async function fallbackEnrichTracks(deps: SyncDeps, userId: string) {
         genres_source = case when cardinality(${genres}::text[]) > 0 and cardinality(genres) = 0 then 'musicbrainz' else genres_source end,
         fallback_checked_at = now()
       where spotify_id = ${t.spotify_id}`;
+  }
+}
+
+/** Last resort for tracks no catalog has a tempo for: measure it from audio. */
+async function analyzeMissingTempos(deps: SyncDeps, userId: string) {
+  if (!deps.analyzeTempo) return;
+  const pending = await deps.sql<{ spotify_id: string }[]>`
+    select distinct t.spotify_id from public.tracks t
+    join public.plays p on p.track_id = t.spotify_id and p.user_id = ${userId}
+    where t.tempo is null and t.fallback_checked_at is not null and t.tempo_analyzed_at is null
+    limit ${MAX_TEMPO_ANALYSES_PER_RUN}`;
+  for (const t of pending) {
+    try {
+      await deps.analyzeTempo(t.spotify_id);
+    } catch (err) {
+      console.error(`Tempo analysis failed for ${t.spotify_id}`, err);
+    }
   }
 }
 

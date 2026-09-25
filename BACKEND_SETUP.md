@@ -31,6 +31,14 @@ What the sync does, per user:
    data. On the first real library, the MusicBrainz pass raised genre coverage
    from 25% to 56%. Deezer found every missing track but had no tempo for any
    of them.
+   **Measured tempo (last resort):** the `analyze-tempo` function downloads the
+   track's 30-second Deezer preview, decodes the MP3 (`mpg123-decoder`, WASM) and
+   estimates BPM from onset autocorrelation with meter-aware scoring
+   (`_shared/tempo.ts`, stored as `bpm_source = 'estimated'` with a confidence).
+   Validated against 23 catalog tempos on a real library: 21 matched within 3%.
+   Sync calls it for up to 8 tracks per run, one track per call, since decoding
+   needs its own CPU budget. On the first library it filled all 24 remaining
+   tracks, bringing coverage to 48/48.
 3. **Strava.** Saves new activities. For those with heart rate, it fetches the
    per-second `time` / `heartrate` / `velocity_smooth` streams.
 4. **Sessions.** For every workout with heart rate, each HR sample is matched to
@@ -97,7 +105,7 @@ supabase secrets set \
   CRON_SECRET="$(openssl rand -hex 32)" \
   APP_REDIRECT_URLS="http://localhost:8081"   # web origins allowed to receive OAuth results (comma-separated)
 
-supabase functions deploy oauth-start oauth-callback sync disconnect delete-account --use-api
+supabase functions deploy oauth-start oauth-callback sync disconnect delete-account analyze-tempo --use-api
 ```
 
 `--use-api` bundles on Supabase's side, so Docker isn't needed.

@@ -1,7 +1,7 @@
 // GET redirect target registered with Spotify and Strava. Exchanges the code
 // for tokens server-side (client secrets never reach the app), stores them,
 // starts a first sync, then sends the user back to the app.
-import { allProviderCreds, oauthCallbackUrl, providerCreds, returnToAllowList } from '../_shared/config.ts';
+import { allProviderCreds, oauthCallbackUrl, providerCreds, returnToAllowList, tempoAnalyzer } from '../_shared/config.ts';
 import { getSql } from '../_shared/db.ts';
 import { env } from '../_shared/env.ts';
 import { isAllowedReturnTo, OAuthState, verifyState } from '../_shared/oauthState.ts';
@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
         scopes = excluded.scopes, connected_at = now(), last_error = null`;
 
     // First sync in the background so the redirect isn't delayed.
-    const first = syncUser({ sql, fetch, creds: allProviderCreds() }, userId).catch((e) => console.error(e));
+    const first = syncUser({ sql, fetch, creds: allProviderCreds(), analyzeTempo: tempoAnalyzer() }, userId).catch((e) => console.error(e));
     if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(first);
 
     return back(returnTo, { provider, status: 'connected' });

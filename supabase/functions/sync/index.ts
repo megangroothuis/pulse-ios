@@ -1,7 +1,7 @@
 // POST {} with a user's access token -> sync that user now (pull-to-refresh).
 // POST {"all": true} with x-cron-secret -> sync every connected user (pg_cron).
 import { requireUserId } from '../_shared/auth.ts';
-import { allProviderCreds } from '../_shared/config.ts';
+import { allProviderCreds, tempoAnalyzer } from '../_shared/config.ts';
 import { getSql } from '../_shared/db.ts';
 import { optionalEnv } from '../_shared/env.ts';
 import { json, serve } from '../_shared/http.ts';
@@ -12,7 +12,7 @@ const CRON_BUDGET_MS = 100_000;
 
 serve(async (req) => {
   const sql = getSql();
-  const deps = { sql, fetch, creds: allProviderCreds() };
+  const deps = { sql, fetch, creds: allProviderCreds(), analyzeTempo: tempoAnalyzer() };
 
   const cronSecret = optionalEnv('CRON_SECRET');
   if (cronSecret && req.headers.get('x-cron-secret') === cronSecret) {

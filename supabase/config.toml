@@ -22,3 +22,7 @@ verify_jwt = false
 
 [functions.delete-account]
 verify_jwt = false
+
+# Called only by the sync function, authenticated with x-cron-secret.
+[functions.analyze-tempo]
+verify_jwt = false

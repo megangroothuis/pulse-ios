@@ -339,41 +339,68 @@ interface DeezerTrack {
   id?: number;
   title?: string;
   bpm?: number;
+  preview?: string;
   artist?: { name?: string };
   error?: unknown;
 }
 
+export interface DeezerMatch {
+  id: number;
+  /** null when Deezer has no tempo (it reports 0) */
+  bpm: number | null;
+  /** 30-second MP3 preview; the URL is signed and short-lived, so use it right away */
+  preview: string | null;
+}
+
 /**
- * BPM from Deezer's public API (no key). Looks up by ISRC first, then falls
- * back to a title + artist search. Deezer reports 0 when it has no tempo,
- * which is treated as unknown.
+ * Find a track on Deezer's public API (no key): by ISRC first, then a plain
+ * title + artist search with exact normalized matching. Deezer's
+ * `artist:"…" track:"…"` syntax returns no results from US regions, but plain
+ * queries do.
  */
-export async function deezerBpm(
+export async function deezerFindTrack(
   f: Fetch,
   track: { isrc: string | null; title: string; artist: string },
-): Promise<number | null> {
+): Promise<DeezerMatch | null> {
   const get = async <T>(url: string) => readJson<T>('deezer', await f(url, { headers: { Accept: 'application/json' } }));
-  const bpmOf = (t: DeezerTrack | undefined) => (t && !t.error && typeof t.bpm === 'number' && t.bpm > 0 ? t.bpm : null);
+  const toMatch = (t: DeezerTrack): DeezerMatch => ({
+    id: t.id!,
+    bpm: typeof t.bpm === 'number' && t.bpm > 0 ? t.bpm : null,
+    preview: t.preview || null,
+  });
 
+  // An ISRC hit without a tempo is kept as a fallback while search looks for
+  // another release of the same song that has one.
+  let isrcMatch: DeezerMatch | null = null;
   if (track.isrc) {
-    const byIsrc = bpmOf(await get<DeezerTrack>(`https://api.deezer.com/track/isrc:${encodeURIComponent(track.isrc)}`));
-    if (byIsrc) return byIsrc;
+    const byIsrc = await get<DeezerTrack>(`https://api.deezer.com/track/isrc:${encodeURIComponent(track.isrc)}`);
+    if (byIsrc.id && !byIsrc.error) {
+      isrcMatch = toMatch(byIsrc);
+      if (isrcMatch.bpm) return isrcMatch;
+    }
   }
 
-  // Plain keyword search: Deezer's `artist:"…" track:"…"` syntax returns no
-  // results from US regions, but plain queries do. Matching below keeps it exact.
   const q = `${track.artist} ${normalizeTitle(track.title)}`;
   const found = await get<{ data?: DeezerTrack[] }>(
     `https://api.deezer.com/search/track?q=${encodeURIComponent(q)}&limit=5`,
   );
   const wantTitle = normalizeTitle(track.title);
   const wantArtist = normalizeTitle(track.artist);
-  const match = (found.data ?? []).find(
+  const hit = (found.data ?? []).find(
     (t) => t.id && normalizeTitle(t.title ?? '') === wantTitle && normalizeTitle(t.artist?.name ?? '') === wantArtist,
   );
-  if (!match) return null;
+  if (!hit) return isrcMatch;
   // Search results omit bpm; fetch the full track.
-  return bpmOf(await get<DeezerTrack>(`https://api.deezer.com/track/${match.id}`));
+  const full = toMatch(await get<DeezerTrack>(`https://api.deezer.com/track/${hit.id}`));
+  return full.bpm || !isrcMatch ? full : { ...isrcMatch, preview: isrcMatch.preview ?? full.preview };
+}
+
+/** BPM from Deezer, or null if it has no match or no tempo. */
+export async function deezerBpm(
+  f: Fetch,
+  track: { isrc: string | null; title: string; artist: string },
+): Promise<number | null> {
+  return (await deezerFindTrack(f, track))?.bpm ?? null;
 }
 
 // MusicBrainz asks every client to identify itself.
