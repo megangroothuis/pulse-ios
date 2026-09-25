@@ -151,6 +151,13 @@ eas init                      # creates the Expo project; with app.config.js it 
 eas build -p ios --profile production
 ```
 
+If `eas build` fails with *"Failed to patch capabilities: APPLE_ID_AUTH"*, that's an
+Expo bug: Apple needs a consent setting Expo doesn't send. Enable **Sign in with
+Apple** on the `com.megangroothuis.pulse` identifier at developer.apple.com →
+Identifiers, then build with `EXPO_NO_CAPABILITY_SYNC=1`. This project's identifier
+already has it enabled, and its signing certificate and profile are stored on Expo,
+so later builds skip this.
+
 `eas build` asks for your Apple Developer login once. It then registers the bundle ID
 (with Sign in with Apple), and creates the signing certificate and provisioning profile.
 The build takes about 15–20 minutes on Expo's servers. Then:
