@@ -44,6 +44,10 @@ module.exports = {
       bundler: "metro",
       favicon: "./assets/pulselogo.png"
     },
+    owner: "megangroothuis",
+    extra: {
+      eas: { projectId: "af6cbb42-279a-4912-8cb6-b98d9cf5589f" }
+    },
     plugins: [
       "expo-secure-store",
       "expo-web-browser",
