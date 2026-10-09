@@ -103,9 +103,9 @@ src/
                         secureStorage.ts (chunked Keychain storage for the auth session)
   types/index.ts        Session / Setlist / Sync / FeedItem types
 supabase/
-  migrations/           Schema + RLS; pg_cron background sync
+  migrations/           Schema + RLS (the old pg_cron sync is dropped by a later migration)
   functions/            Deno Edge Functions: oauth-start, oauth-callback, sync, disconnect, delete-account,
-                        analyze-tempo (BPM measured from 30 s previews)
+                        analyze-tempo (BPM measured from 30 s previews), strava-webhook (new workout -> sync)
     _shared/            transform.ts (HR x songs -> session), sync.ts, providers.ts, tempo.ts, tests
   tests/                Stub of Supabase's auth schema for local DB tests; fixture generator
 ios/                    Prebuilt native iOS project (Xcode/CocoaPods, macOS only)
@@ -123,7 +123,7 @@ BACKEND_SETUP.md        Supabase / Spotify / Strava / Apple setup, deploy, and w
 App (`.env`, see `.env.example`): `EXPO_PUBLIC_SUPABASE_URL` and
 `EXPO_PUBLIC_SUPABASE_ANON_KEY` switch on live mode. Nothing else goes in the app.
 Edge Function secrets (Spotify/Strava client IDs and secrets, `OAUTH_STATE_SECRET`,
-`CRON_SECRET`, `APP_REDIRECT_URLS`) are set with `supabase secrets set`; see
+`CRON_SECRET`, `APP_REDIRECT_URLS`, `STRAVA_WEBHOOK_VERIFY_TOKEN`) are set with `supabase secrets set`; see
 `BACKEND_SETUP.md`. Tooling vars: `EXPO_OFFLINE=1` (required in the cloud sandbox),
 `EXPO_NO_TELEMETRY=1`, `CI=1` (turns off Metro watch mode, so leave it unset while iterating).
 

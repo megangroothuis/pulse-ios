@@ -12,7 +12,8 @@ iOS / web app ──(Supabase anon key + user login)──► Supabase
    │                                                 ├─ Postgres (RLS: users only read their own rows)
    │                                                 └─ Edge Functions (hold every secret)
    │                                                      oauth-start / oauth-callback  ◄─► Spotify, Strava
-   │                                                      sync (you, or every 20 min via pg_cron)
+   │                                                      sync (pull-to-refresh, or a new Strava workout)
+   │                                                      strava-webhook  ◄── Strava push events
    │                                                      disconnect / delete-account
    └── opens Spotify/Strava consent in a browser ──► oauth-callback ──► back to pulse://connected
 ```
@@ -20,8 +21,9 @@ iOS / web app ──(Supabase anon key + user login)──► Supabase
 What the sync does, per user:
 
 1. **Spotify.** Saves new plays from "recently played" (with `after` cursor),
-   plus track metadata. Spotify only exposes the **last 50 plays**, which is why
-   the background sync runs every 20 minutes.
+   plus track metadata. Spotify only exposes the **last 50 plays**. A sync
+   runs as soon as Strava reports a new workout, so the songs from that workout are
+   still among the last 50 (unless the upload is delayed by hours of more listening).
 2. **BPM and energy.** Looked up from [ReccoBeats](https://reccobeats.com) by
    Spotify track ID. Spotify stopped giving audio features to new apps in
    November 2024. Genres come from Spotify artist data when available.
@@ -103,9 +105,10 @@ supabase secrets set \
   STRAVA_CLIENT_ID=...  STRAVA_CLIENT_SECRET=... \
   OAUTH_STATE_SECRET="$(openssl rand -hex 32)" \
   CRON_SECRET="$(openssl rand -hex 32)" \
+  STRAVA_WEBHOOK_VERIFY_TOKEN="$(openssl rand -hex 16)" \
   APP_REDIRECT_URLS="http://localhost:8081"   # web origins allowed to receive OAuth results (comma-separated)
 
-supabase functions deploy oauth-start oauth-callback sync disconnect delete-account analyze-tempo --use-api
+supabase functions deploy oauth-start oauth-callback sync disconnect delete-account analyze-tempo strava-webhook --use-api
 ```
 
 `--use-api` bundles on Supabase's side, so Docker isn't needed.
@@ -119,18 +122,35 @@ If the project already has tables from an earlier design with the same names
 (`profiles`, `sessions`, `tracks`, `workouts`), move them out of `public` first,
 for example into a `legacy` schema. Otherwise the migration fails.
 
-## 6. Background sync (pg_cron)
+## 6. Strava webhook (sync when a workout is posted)
 
-In the Supabase SQL editor, once:
+Strava calls the `strava-webhook` function whenever a connected athlete posts an
+activity, and that user's sync runs right away. Pull-to-refresh in the app still
+syncs on demand. Strava allows **one subscription per app**. Create it once, after
+deploying the function:
 
-```sql
-select vault.create_secret('https://<your-project-ref>.supabase.co', 'project_url');
-select vault.create_secret('<the CRON_SECRET you set above>', 'cron_secret');
+```bash
+curl -X POST https://www.strava.com/api/v3/push_subscriptions \
+  -F client_id=<STRAVA_CLIENT_ID> \
+  -F client_secret=<STRAVA_CLIENT_SECRET> \
+  -F callback_url=https://<your-project-ref>.supabase.co/functions/v1/strava-webhook \
+  -F verify_token=<the STRAVA_WEBHOOK_VERIFY_TOKEN you set above>
 ```
 
-The migration `20260924000100_sync_cron.sql` schedules `sync` every 20 minutes. It
-enables `pg_cron` and `pg_net`. If `db push` complains, enable both under Database →
-Extensions and push again.
+It answers with `{"id": 123456}`. Optionally save that ID so the function ignores
+anything else: `supabase secrets set STRAVA_WEBHOOK_SUBSCRIPTION_ID=123456`.
+
+- Check it: `curl -G https://www.strava.com/api/v3/push_subscriptions -d client_id=... -d client_secret=...`
+- Delete it (to change the URL): `curl -X DELETE "https://www.strava.com/api/v3/push_subscriptions/<id>?client_id=...&client_secret=..."`
+
+Only **new activities** trigger a sync. Edits and deletes in Strava are ignored, because
+Strava events aren't signed and a sync re-reads everything with the user's own token.
+
+**The old 20-minute schedule** (migration `20260924000100_sync_cron.sql`) is
+switched off by `20261009000000_drop_sync_cron.sql` on the next `supabase db push`.
+The `sync` function still accepts `x-cron-secret` calls, so you can schedule a slower
+safety net later if you want one. The two Vault secrets (`project_url`, `cron_secret`)
+are no longer used. You can delete them under Project Settings → Vault.
 
 ## 7. Point the app at it
 
