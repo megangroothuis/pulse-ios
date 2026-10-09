@@ -39,7 +39,7 @@ const AIInsights: React.FC<AIInsightsProps> = ({ session }) => {
         'Active': 'Various',
       };
       
-      const artist = songToArtist[point.songName] || session.artists[0] || 'Unknown';
+      const artist = point.artist ?? (songToArtist[point.songName] || session.artists[0] || 'Unknown');
       
       if (!artistPerformance[artist]) {
         artistPerformance[artist] = { avgHeartRate: 0, duration: 0, count: 0 };
@@ -145,7 +145,7 @@ const AIInsights: React.FC<AIInsightsProps> = ({ session }) => {
         'On the Nature of Daylight': 'Classical',
       };
       
-      const genre = songToGenre[point.songName] || 'Other';
+      const genre = point.genre ?? (songToGenre[point.songName] || 'Other');
       
       if (!genrePerformance[genre]) {
         genrePerformance[genre] = { avgHeartRate: 0, duration: 0 };

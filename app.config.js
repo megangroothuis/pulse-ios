@@ -1,10 +1,6 @@
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '.env') });
-
-// Debug: Check if env vars are loaded
-console.log('app.config.js - Environment check:');
-console.log('  SUPABASE_URL:', process.env.EXPO_PUBLIC_SUPABASE_URL ? `${process.env.EXPO_PUBLIC_SUPABASE_URL.substring(0, 30)}...` : 'MISSING');
-console.log('  SUPABASE_KEY:', process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ? 'LOADED' : 'MISSING');
+// EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY switch the app from
+// demo mode (mock data) to live mode. See BACKEND_SETUP.md. Expo CLI loads
+// .env itself; EXPO_NO_DOTENV=1 turns that off (scripts/verify.sh uses it).
 
 module.exports = {
   expo: {
@@ -13,29 +9,49 @@ module.exports = {
     version: "1.0.0",
     orientation: "portrait",
     userInterfaceStyle: "dark",
+    icon: "./assets/icon.png",
     scheme: "pulse",
     assetBundlePatterns: [
       "**/*"
     ],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.pulse.app"
+      // App Store bundle IDs are global; "com.pulse.app" is taken. If you change
+      // this, also update the Apple provider's Client IDs in Supabase Auth.
+      bundleIdentifier: "com.megangroothuis.pulse",
+      usesAppleSignIn: true,
+      infoPlist: {
+        // Only standard HTTPS: skips the export-compliance question on every upload.
+        ITSAppUsesNonExemptEncryption: false
+      },
+      // Required-reason API declarations (React Native / Expo modules).
+      // App Store Connect rejects uploads without them.
+      privacyManifests: {
+        NSPrivacyAccessedAPITypes: [
+          { NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategoryFileTimestamp", NSPrivacyAccessedAPITypeReasons: ["C617.1", "0A2A.1", "3B52.1"] },
+          { NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategoryUserDefaults", NSPrivacyAccessedAPITypeReasons: ["CA92.1"] },
+          { NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategoryDiskSpace", NSPrivacyAccessedAPITypeReasons: ["E174.1", "85F4.1"] },
+          { NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategorySystemBootTime", NSPrivacyAccessedAPITypeReasons: ["35F9.1"] }
+        ],
+        NSPrivacyCollectedDataTypes: [],
+        NSPrivacyTracking: false
+      }
     },
     android: {
-      package: "com.pulse.app"
+      package: "com.megangroothuis.pulse"
     },
     web: {
       bundler: "metro",
       favicon: "./assets/pulselogo.png"
     },
+    owner: "megangroothuis",
     extra: {
-      clerkPublishableKey: process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY,
-      supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
-      supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+      eas: { projectId: "af6cbb42-279a-4912-8cb6-b98d9cf5589f" }
     },
     plugins: [
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-apple-authentication"
     ]
   }
 };

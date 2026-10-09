@@ -1,0 +1,780 @@
+{
+  "id": "5e55e55e-0000-4000-8000-000000000001",
+  "user_id": "00000000-0000-4000-8000-00000000abcd",
+  "title": "Sunrise Tempo Run",
+  "description": null,
+  "workout_type": "Running",
+  "started_at": "2026-09-23T06:30:00.000Z",
+  "songs": [
+    "Sunrise Drive",
+    "Open Road",
+    "Pulse Lines",
+    "Stride",
+    "Heatwave Run",
+    "Redline",
+    "Last Mile",
+    "Easy Now",
+    "Low Tide"
+  ],
+  "artists": [
+    "Cleo Vale",
+    "The Northlines",
+    "Kira Moss",
+    "Big Tempo",
+    "VOLT",
+    "Harbor"
+  ],
+  "power_song": "Last Mile",
+  "peak_heart_rate": 180,
+  "avg_heart_rate": 155,
+  "music_minutes": 32,
+  "heat_map": [
+    {
+      "songBPM": 96,
+      "heartRate": 109,
+      "durationMinutes": 0.5,
+      "songName": "Sunrise Drive",
+      "artist": "Cleo Vale",
+      "genre": "Indie",
+      "energy": 0.48,
+      "offsetSeconds": 0
+    },
+    {
+      "songBPM": 96,
+      "heartRate": 113,
+      "durationMinutes": 0.5,
+      "songName": "Sunrise Drive",
+      "artist": "Cleo Vale",
+      "genre": "Indie",
+      "energy": 0.48,
+      "offsetSeconds": 30
+    },
+    {
+      "songBPM": 96,
+      "heartRate": 114,
+      "durationMinutes": 0.5,
+      "songName": "Sunrise Drive",
+      "artist": "Cleo Vale",
+      "genre": "Indie",
+      "energy": 0.48,
+      "offsetSeconds": 60
+    },
+    {
+      "songBPM": 96,
+      "heartRate": 120,
+      "durationMinutes": 0.5,
+      "songName": "Sunrise Drive",
+      "artist": "Cleo Vale",
+      "genre": "Indie",
+      "energy": 0.48,
+      "offsetSeconds": 90
+    },
+    {
+      "songBPM": 96,
+      "heartRate": 127,
+      "durationMinutes": 0.5,
+      "songName": "Sunrise Drive",
+      "artist": "Cleo Vale",
+      "genre": "Indie",
+      "energy": 0.48,
+      "offsetSeconds": 120
+    },
+    {
+      "songBPM": 96,
+      "heartRate": 129,
+      "durationMinutes": 0.33,
+      "songName": "Sunrise Drive",
+      "artist": "Cleo Vale",
+      "genre": "Indie",
+      "energy": 0.48,
+      "offsetSeconds": 150
+    },
+    {
+      "songBPM": 118,
+      "heartRate": 131,
+      "durationMinutes": 0.5,
+      "songName": "Open Road",
+      "artist": "The Northlines",
+      "genre": "Rock",
+      "energy": 0.59,
+      "offsetSeconds": 170
+    },
+    {
+      "songBPM": 118,
+      "heartRate": 137,
+      "durationMinutes": 0.5,
+      "songName": "Open Road",
+      "artist": "The Northlines",
+      "genre": "Rock",
+      "energy": 0.59,
+      "offsetSeconds": 200
+    },
+    {
+      "songBPM": 118,
+      "heartRate": 143,
+      "durationMinutes": 0.5,
+      "songName": "Open Road",
+      "artist": "The Northlines",
+      "genre": "Rock",
+      "energy": 0.59,
+      "offsetSeconds": 230
+    },
+    {
+      "songBPM": 118,
+      "heartRate": 145,
+      "durationMinutes": 0.5,
+      "songName": "Open Road",
+      "artist": "The Northlines",
+      "genre": "Rock",
+      "energy": 0.59,
+      "offsetSeconds": 260
+    },
+    {
+      "songBPM": 118,
+      "heartRate": 148,
+      "durationMinutes": 0.5,
+      "songName": "Open Road",
+      "artist": "The Northlines",
+      "genre": "Rock",
+      "energy": 0.59,
+      "offsetSeconds": 290
+    },
+    {
+      "songBPM": 118,
+      "heartRate": 152,
+      "durationMinutes": 0.5,
+      "songName": "Open Road",
+      "artist": "The Northlines",
+      "genre": "Rock",
+      "energy": 0.59,
+      "offsetSeconds": 320
+    },
+    {
+      "songBPM": 118,
+      "heartRate": 152,
+      "durationMinutes": 0.5,
+      "songName": "Open Road",
+      "artist": "The Northlines",
+      "genre": "Rock",
+      "energy": 0.59,
+      "offsetSeconds": 350
+    },
+    {
+      "songBPM": 118,
+      "heartRate": 150,
+      "durationMinutes": 0.25,
+      "songName": "Open Road",
+      "artist": "The Northlines",
+      "genre": "Rock",
+      "energy": 0.59,
+      "offsetSeconds": 380
+    },
+    {
+      "songBPM": 128,
+      "heartRate": 151,
+      "durationMinutes": 0.5,
+      "songName": "Pulse Lines",
+      "artist": "Kira Moss",
+      "genre": "Pop",
+      "energy": 0.64,
+      "offsetSeconds": 395
+    },
+    {
+      "songBPM": 128,
+      "heartRate": 154,
+      "durationMinutes": 0.5,
+      "songName": "Pulse Lines",
+      "artist": "Kira Moss",
+      "genre": "Pop",
+      "energy": 0.64,
+      "offsetSeconds": 425
+    },
+    {
+      "songBPM": 128,
+      "heartRate": 154,
+      "durationMinutes": 0.5,
+      "songName": "Pulse Lines",
+      "artist": "Kira Moss",
+      "genre": "Pop",
+      "energy": 0.64,
+      "offsetSeconds": 455
+    },
+    {
+      "songBPM": 128,
+      "heartRate": 152,
+      "durationMinutes": 0.5,
+      "songName": "Pulse Lines",
+      "artist": "Kira Moss",
+      "genre": "Pop",
+      "energy": 0.64,
+      "offsetSeconds": 485
+    },
+    {
+      "songBPM": 128,
+      "heartRate": 154,
+      "durationMinutes": 0.5,
+      "songName": "Pulse Lines",
+      "artist": "Kira Moss",
+      "genre": "Pop",
+      "energy": 0.64,
+      "offsetSeconds": 515
+    },
+    {
+      "songBPM": 128,
+      "heartRate": 157,
+      "durationMinutes": 0.5,
+      "songName": "Pulse Lines",
+      "artist": "Kira Moss",
+      "genre": "Pop",
+      "energy": 0.64,
+      "offsetSeconds": 545
+    },
+    {
+      "songBPM": 128,
+      "heartRate": 156,
+      "durationMinutes": 0.33,
+      "songName": "Pulse Lines",
+      "artist": "Kira Moss",
+      "genre": "Pop",
+      "energy": 0.64,
+      "offsetSeconds": 575
+    },
+    {
+      "songBPM": 142,
+      "heartRate": 154,
+      "durationMinutes": 0.5,
+      "songName": "Stride",
+      "artist": "Big Tempo",
+      "genre": "Hip-Hop",
+      "energy": 0.71,
+      "offsetSeconds": 595
+    },
+    {
+      "songBPM": 142,
+      "heartRate": 157,
+      "durationMinutes": 0.5,
+      "songName": "Stride",
+      "artist": "Big Tempo",
+      "genre": "Hip-Hop",
+      "energy": 0.71,
+      "offsetSeconds": 625
+    },
+    {
+      "songBPM": 142,
+      "heartRate": 159,
+      "durationMinutes": 0.5,
+      "songName": "Stride",
+      "artist": "Big Tempo",
+      "genre": "Hip-Hop",
+      "energy": 0.71,
+      "offsetSeconds": 655
+    },
+    {
+      "songBPM": 142,
+      "heartRate": 158,
+      "durationMinutes": 0.5,
+      "songName": "Stride",
+      "artist": "Big Tempo",
+      "genre": "Hip-Hop",
+      "energy": 0.71,
+      "offsetSeconds": 685
+    },
+    {
+      "songBPM": 142,
+      "heartRate": 157,
+      "durationMinutes": 0.5,
+      "songName": "Stride",
+      "artist": "Big Tempo",
+      "genre": "Hip-Hop",
+      "energy": 0.71,
+      "offsetSeconds": 715
+    },
+    {
+      "songBPM": 142,
+      "heartRate": 160,
+      "durationMinutes": 0.5,
+      "songName": "Stride",
+      "artist": "Big Tempo",
+      "genre": "Hip-Hop",
+      "energy": 0.71,
+      "offsetSeconds": 745
+    },
+    {
+      "songBPM": 142,
+      "heartRate": 161,
+      "durationMinutes": 0.17,
+      "songName": "Stride",
+      "artist": "Big Tempo",
+      "genre": "Hip-Hop",
+      "energy": 0.71,
+      "offsetSeconds": 775
+    },
+    {
+      "songBPM": 150,
+      "heartRate": 160,
+      "durationMinutes": 0.5,
+      "songName": "Heatwave Run",
+      "artist": "Kira Moss",
+      "genre": "Pop",
+      "energy": 0.75,
+      "offsetSeconds": 785
+    },
+    {
+      "songBPM": 150,
+      "heartRate": 159,
+      "durationMinutes": 0.5,
+      "songName": "Heatwave Run",
+      "artist": "Kira Moss",
+      "genre": "Pop",
+      "energy": 0.75,
+      "offsetSeconds": 815
+    },
+    {
+      "songBPM": 150,
+      "heartRate": 163,
+      "durationMinutes": 0.5,
+      "songName": "Heatwave Run",
+      "artist": "Kira Moss",
+      "genre": "Pop",
+      "energy": 0.75,
+      "offsetSeconds": 845
+    },
+    {
+      "songBPM": 150,
+      "heartRate": 165,
+      "durationMinutes": 0.5,
+      "songName": "Heatwave Run",
+      "artist": "Kira Moss",
+      "genre": "Pop",
+      "energy": 0.75,
+      "offsetSeconds": 875
+    },
+    {
+      "songBPM": 150,
+      "heartRate": 163,
+      "durationMinutes": 0.5,
+      "songName": "Heatwave Run",
+      "artist": "Kira Moss",
+      "genre": "Pop",
+      "energy": 0.75,
+      "offsetSeconds": 905
+    },
+    {
+      "songBPM": 150,
+      "heartRate": 164,
+      "durationMinutes": 0.5,
+      "songName": "Heatwave Run",
+      "artist": "Kira Moss",
+      "genre": "Pop",
+      "energy": 0.75,
+      "offsetSeconds": 935
+    },
+    {
+      "songBPM": 150,
+      "heartRate": 167,
+      "durationMinutes": 0.5,
+      "songName": "Heatwave Run",
+      "artist": "Kira Moss",
+      "genre": "Pop",
+      "energy": 0.75,
+      "offsetSeconds": 965
+    },
+    {
+      "songBPM": 150,
+      "heartRate": 168,
+      "durationMinutes": 0.08,
+      "songName": "Heatwave Run",
+      "artist": "Kira Moss",
+      "genre": "Pop",
+      "energy": 0.75,
+      "offsetSeconds": 995
+    },
+    {
+      "songBPM": 174,
+      "heartRate": 167,
+      "durationMinutes": 0.5,
+      "songName": "Redline",
+      "artist": "VOLT",
+      "genre": "Electronic",
+      "energy": 0.87,
+      "offsetSeconds": 1000
+    },
+    {
+      "songBPM": 174,
+      "heartRate": 166,
+      "durationMinutes": 0.5,
+      "songName": "Redline",
+      "artist": "VOLT",
+      "genre": "Electronic",
+      "energy": 0.87,
+      "offsetSeconds": 1030
+    },
+    {
+      "songBPM": 174,
+      "heartRate": 169,
+      "durationMinutes": 0.5,
+      "songName": "Redline",
+      "artist": "VOLT",
+      "genre": "Electronic",
+      "energy": 0.87,
+      "offsetSeconds": 1060
+    },
+    {
+      "songBPM": 174,
+      "heartRate": 171,
+      "durationMinutes": 0.5,
+      "songName": "Redline",
+      "artist": "VOLT",
+      "genre": "Electronic",
+      "energy": 0.87,
+      "offsetSeconds": 1090
+    },
+    {
+      "songBPM": 174,
+      "heartRate": 169,
+      "durationMinutes": 0.5,
+      "songName": "Redline",
+      "artist": "VOLT",
+      "genre": "Electronic",
+      "energy": 0.87,
+      "offsetSeconds": 1120
+    },
+    {
+      "songBPM": 174,
+      "heartRate": 170,
+      "durationMinutes": 0.5,
+      "songName": "Redline",
+      "artist": "VOLT",
+      "genre": "Electronic",
+      "energy": 0.87,
+      "offsetSeconds": 1150
+    },
+    {
+      "songBPM": 174,
+      "heartRate": 173,
+      "durationMinutes": 0.5,
+      "songName": "Redline",
+      "artist": "VOLT",
+      "genre": "Electronic",
+      "energy": 0.87,
+      "offsetSeconds": 1180
+    },
+    {
+      "songBPM": 174,
+      "heartRate": 173,
+      "durationMinutes": 0.5,
+      "songName": "Redline",
+      "artist": "VOLT",
+      "genre": "Electronic",
+      "energy": 0.87,
+      "offsetSeconds": 1210
+    },
+    {
+      "songBPM": 165,
+      "heartRate": 171,
+      "durationMinutes": 0.5,
+      "songName": "Last Mile",
+      "artist": "Big Tempo",
+      "genre": "Hip-Hop",
+      "energy": 0.825,
+      "offsetSeconds": 1240
+    },
+    {
+      "songBPM": 165,
+      "heartRate": 174,
+      "durationMinutes": 0.5,
+      "songName": "Last Mile",
+      "artist": "Big Tempo",
+      "genre": "Hip-Hop",
+      "energy": 0.825,
+      "offsetSeconds": 1270
+    },
+    {
+      "songBPM": 165,
+      "heartRate": 176,
+      "durationMinutes": 0.5,
+      "songName": "Last Mile",
+      "artist": "Big Tempo",
+      "genre": "Hip-Hop",
+      "energy": 0.825,
+      "offsetSeconds": 1300
+    },
+    {
+      "songBPM": 165,
+      "heartRate": 175,
+      "durationMinutes": 0.5,
+      "songName": "Last Mile",
+      "artist": "Big Tempo",
+      "genre": "Hip-Hop",
+      "energy": 0.825,
+      "offsetSeconds": 1330
+    },
+    {
+      "songBPM": 165,
+      "heartRate": 175,
+      "durationMinutes": 0.5,
+      "songName": "Last Mile",
+      "artist": "Big Tempo",
+      "genre": "Hip-Hop",
+      "energy": 0.825,
+      "offsetSeconds": 1360
+    },
+    {
+      "songBPM": 165,
+      "heartRate": 178,
+      "durationMinutes": 0.5,
+      "songName": "Last Mile",
+      "artist": "Big Tempo",
+      "genre": "Hip-Hop",
+      "energy": 0.825,
+      "offsetSeconds": 1390
+    },
+    {
+      "songBPM": 165,
+      "heartRate": 179,
+      "durationMinutes": 0.42,
+      "songName": "Last Mile",
+      "artist": "Big Tempo",
+      "genre": "Hip-Hop",
+      "energy": 0.825,
+      "offsetSeconds": 1420
+    },
+    {
+      "songBPM": 100,
+      "heartRate": 177,
+      "durationMinutes": 0.5,
+      "songName": "Easy Now",
+      "artist": "Cleo Vale",
+      "genre": "Indie",
+      "energy": 0.5,
+      "offsetSeconds": 1445
+    },
+    {
+      "songBPM": 100,
+      "heartRate": 178,
+      "durationMinutes": 0.5,
+      "songName": "Easy Now",
+      "artist": "Cleo Vale",
+      "genre": "Indie",
+      "energy": 0.5,
+      "offsetSeconds": 1475
+    },
+    {
+      "songBPM": 100,
+      "heartRate": 179,
+      "durationMinutes": 0.5,
+      "songName": "Easy Now",
+      "artist": "Cleo Vale",
+      "genre": "Indie",
+      "energy": 0.5,
+      "offsetSeconds": 1505
+    },
+    {
+      "songBPM": 100,
+      "heartRate": 175,
+      "durationMinutes": 0.5,
+      "songName": "Easy Now",
+      "artist": "Cleo Vale",
+      "genre": "Indie",
+      "energy": 0.5,
+      "offsetSeconds": 1535
+    },
+    {
+      "songBPM": 100,
+      "heartRate": 172,
+      "durationMinutes": 0.5,
+      "songName": "Easy Now",
+      "artist": "Cleo Vale",
+      "genre": "Indie",
+      "energy": 0.5,
+      "offsetSeconds": 1565
+    },
+    {
+      "songBPM": 100,
+      "heartRate": 173,
+      "durationMinutes": 0.5,
+      "songName": "Easy Now",
+      "artist": "Cleo Vale",
+      "genre": "Indie",
+      "energy": 0.5,
+      "offsetSeconds": 1595
+    },
+    {
+      "songBPM": 100,
+      "heartRate": 172,
+      "durationMinutes": 0.5,
+      "songName": "Easy Now",
+      "artist": "Cleo Vale",
+      "genre": "Indie",
+      "energy": 0.5,
+      "offsetSeconds": 1625
+    },
+    {
+      "songBPM": 100,
+      "heartRate": 169,
+      "durationMinutes": 0.33,
+      "songName": "Easy Now",
+      "artist": "Cleo Vale",
+      "genre": "Indie",
+      "energy": 0.5,
+      "offsetSeconds": 1655
+    },
+    {
+      "songBPM": 82,
+      "heartRate": 167,
+      "durationMinutes": 0.5,
+      "songName": "Low Tide",
+      "artist": "Harbor",
+      "genre": "Ambient",
+      "energy": 0.41,
+      "offsetSeconds": 1675
+    },
+    {
+      "songBPM": 82,
+      "heartRate": 168,
+      "durationMinutes": 0.5,
+      "songName": "Low Tide",
+      "artist": "Harbor",
+      "genre": "Ambient",
+      "energy": 0.41,
+      "offsetSeconds": 1705
+    },
+    {
+      "songBPM": 82,
+      "heartRate": 166,
+      "durationMinutes": 0.5,
+      "songName": "Low Tide",
+      "artist": "Harbor",
+      "genre": "Ambient",
+      "energy": 0.41,
+      "offsetSeconds": 1735
+    },
+    {
+      "songBPM": 82,
+      "heartRate": 160,
+      "durationMinutes": 0.5,
+      "songName": "Low Tide",
+      "artist": "Harbor",
+      "genre": "Ambient",
+      "energy": 0.41,
+      "offsetSeconds": 1765
+    },
+    {
+      "songBPM": 82,
+      "heartRate": 157,
+      "durationMinutes": 0.5,
+      "songName": "Low Tide",
+      "artist": "Harbor",
+      "genre": "Ambient",
+      "energy": 0.41,
+      "offsetSeconds": 1795
+    },
+    {
+      "songBPM": 82,
+      "heartRate": 156,
+      "durationMinutes": 0.5,
+      "songName": "Low Tide",
+      "artist": "Harbor",
+      "genre": "Ambient",
+      "energy": 0.41,
+      "offsetSeconds": 1825
+    },
+    {
+      "songBPM": 82,
+      "heartRate": 151,
+      "durationMinutes": 0.5,
+      "songName": "Low Tide",
+      "artist": "Harbor",
+      "genre": "Ambient",
+      "energy": 0.41,
+      "offsetSeconds": 1855
+    },
+    {
+      "songBPM": 82,
+      "heartRate": 146,
+      "durationMinutes": 0.5,
+      "songName": "Low Tide",
+      "artist": "Harbor",
+      "genre": "Ambient",
+      "energy": 0.41,
+      "offsetSeconds": 1885
+    },
+    {
+      "songBPM": 82,
+      "heartRate": 145,
+      "durationMinutes": 0.08,
+      "songName": "Low Tide",
+      "artist": "Harbor",
+      "genre": "Ambient",
+      "energy": 0.41,
+      "offsetSeconds": 1915
+    }
+  ],
+  "genres": [
+    {
+      "name": "Pop",
+      "durationMinutes": 6.92,
+      "avgHeartRate": 159,
+      "avgBPM": 139,
+      "badges": []
+    },
+    {
+      "name": "Indie",
+      "durationMinutes": 6.67,
+      "avgHeartRate": 151,
+      "avgBPM": 98,
+      "badges": []
+    },
+    {
+      "name": "Hip-Hop",
+      "durationMinutes": 6.58,
+      "avgHeartRate": 167,
+      "avgBPM": 154,
+      "badges": []
+    },
+    {
+      "name": "Ambient",
+      "durationMinutes": 4.08,
+      "avgHeartRate": 159,
+      "avgBPM": 82,
+      "badges": []
+    },
+    {
+      "name": "Electronic",
+      "durationMinutes": 4,
+      "avgHeartRate": 169,
+      "avgBPM": 174,
+      "badges": [
+        {
+          "type": "peak-intensity",
+          "label": "Peak Intensity"
+        },
+        {
+          "type": "fastest-pace",
+          "label": "Fastest Pace"
+        },
+        {
+          "type": "steady-rhythm",
+          "label": "Steady Rhythm"
+        }
+      ]
+    },
+    {
+      "name": "Rock",
+      "durationMinutes": 3.75,
+      "avgHeartRate": 145,
+      "avgBPM": 118,
+      "badges": [
+        {
+          "type": "power-boost",
+          "label": "Power Boost"
+        },
+        {
+          "type": "recovery-beats",
+          "label": "Recovery Beats"
+        }
+      ]
+    }
+  ],
+  "bumps": 0
+}
