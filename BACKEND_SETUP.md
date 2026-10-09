@@ -91,7 +91,7 @@ The app never sees a client secret or a provider token. Tokens live in the
 1. <https://www.strava.com/settings/api> → create an app.
 2. **Authorization Callback Domain**: `<your-project-ref>.supabase.co`
 3. Note the **Client ID** and **Client Secret**.
-4. New Strava apps can only connect **1 athlete** (you) until you request more capacity
+4. New Strava apps can connect only a few athletes (**10** as of Oct 2026) until you request more capacity
    from Strava. Its API agreement also limits showing a user's Strava data to
    *other* users, which matters for the future social feed.
 
@@ -206,7 +206,7 @@ eas submit -p ios --latest    # uploads the build to App Store Connect
   each new build automatically.
 - Accounts on the backend side: they sign in with Apple or an email code. If they
   should **connect Spotify**, add their Spotify email under User Management (section 3).
-  **Strava** connects only your athlete until Strava approves more capacity (section 4).
+  **Strava** allows up to 10 connected athletes, you included, until Strava approves more (section 4).
 
 ## 8. Try it
 
