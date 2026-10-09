@@ -1,5 +1,6 @@
 // POST {} with a user's access token -> sync that user now (pull-to-refresh).
-// POST {"all": true} with x-cron-secret -> sync every connected user (pg_cron).
+// POST {"all": true} with x-cron-secret -> sync every connected user (no schedule calls
+// this now; strava-webhook syncs one user per new workout).
 import { requireUserId } from '../_shared/auth.ts';
 import { allProviderCreds, tempoAnalyzer } from '../_shared/config.ts';
 import { getSql } from '../_shared/db.ts';
