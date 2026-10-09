@@ -72,8 +72,8 @@ The app never sees a client secret or a provider token. Tokens live in the
   The built-in sender is heavily rate-limited.
 - **Sign in with Apple** (iOS only):
   1. In the Apple Developer portal, enable *Sign in with Apple* for the
-     `com.pulse.app` App ID.
-  2. In Supabase: Authentication → Providers → Apple → enable, and add `com.pulse.app`
+     `com.megangroothuis.pulse` App ID.
+  2. In Supabase: Authentication → Providers → Apple → enable, and add `com.megangroothuis.pulse`
      under *Client IDs*. For native sign-in, the bundle ID is all it needs. A Services ID
      and key are only needed for Apple sign-in on the web.
 
@@ -189,6 +189,24 @@ eas submit -p ios --latest    # uploads the build to App Store Connect
   (no Apple review needed). Install the **TestFlight** app on your iPhone and accept the invite.
 - Each later `eas build` + `eas submit` shows up in TestFlight automatically (build numbers
   auto-increment).
+
+### Inviting other testers
+
+- **Internal testers** (up to 100, no Apple review, builds appear right away): first add the
+  person to your team in App Store Connect → **Users and Access** → **+**, using their
+  Apple Account email. Give them a role such as *Developer* or *Marketing*, and under
+  Apps give them access to Pulse. Once they accept the email invite, go to
+  **TestFlight → Internal Testing**, open your group and add them under Testers.
+- **External testers** (up to 10,000, anyone with an email): TestFlight → **+** next to
+  External Testing → create a group → add the build and testers. The first build in a
+  group needs a short **Beta App Review**, usually about a day. You also need *Test
+  Information* (feedback email, beta description) and a privacy policy URL. You can also
+  turn on a **public link**.
+- Testers install the **TestFlight** app, accept the invite email or redeem the code, and get
+  each new build automatically.
+- Accounts on the backend side: they sign in with Apple or an email code. If they
+  should **connect Spotify**, add their Spotify email under User Management (section 3).
+  **Strava** connects only your athlete until Strava approves more capacity (section 4).
 
 ## 8. Try it
 
